@@ -56,10 +56,28 @@ scaffold:
     - path: internal/fetcher/fetcher.go
       description: >
         Implements Fetch(dep ResolvedDep, installDir string) error.
-        Clones the GitHub repo at the resolved tag into installDir using
-        os/exec git. Verifies the SHA256 of the entrypoint markdown file
-        against the value stored in mln.lock. Skips if already present
-        and checksum matches (idempotent). No GitHub API — pure git.
+        A skill is a directory, not a single file, so the fetcher must clone
+        and store the entire skill directory tree.
+
+        Algorithm:
+          1. Parse dep.name into (repoURL, subdir). A dep name like
+             "github.com/anthropics/skills/skills/skill-creator" maps to
+             repo "https://github.com/anthropics/skills" and subdir "skills/skill-creator".
+             A dep with no subdir (e.g. "github.com/alice/pdf-skill") has subdir "".
+          2. Shallow-clone the repo at the resolved tag into a temp directory:
+               git clone --depth=1 --branch <tag> --no-checkout <repoURL> <tmpdir>
+          3. Sparse-checkout only the skill subdirectory (or repo root if subdir is ""):
+               git -C <tmpdir> sparse-checkout set <subdir or ".">
+               git -C <tmpdir> checkout
+          4. Copy the subdirectory tree from <tmpdir>/<subdir> into installDir.
+          5. Compute a SHA256 tree hash over all files in the copied directory
+             (sorted by relative path for determinism) and compare against dep.tree_hash
+             from mln.lock. Fail if mismatch.
+          6. Delete <tmpdir>.
+          7. Skip steps 1-6 entirely if installDir already exists and tree hash matches
+             (idempotent install).
+
+        No GitHub API calls — pure git via os/exec.
 
     - path: internal/lockfile/lockfile.go
       description: >
@@ -147,12 +165,13 @@ data_types:
   ResolvedDep:
     description: A single dependency with its pinned version, output of the resolver
     fields:
-      name:       string   # e.g. "github.com/user/xlsx-skill"
+      name:       string   # full dep name, e.g. "github.com/anthropics/skills/skills/skill-creator"
       version:    string   # exact pinned semver, e.g. "1.3.1"
-      repo_url:   string   # https://github.com/user/xlsx-skill
+      repo_url:   string   # https://github.com/anthropics/skills  (repo root, derived from name)
+      subdir:     string   # subdirectory within the repo, e.g. "skills/skill-creator" (empty if repo root)
       git_tag:    string   # e.g. "v1.3.1"
-      entrypoint: string   # path inside the repo, e.g. "SKILL.md"
-      checksum:   string   # SHA256 of the entrypoint file at this tag
+      entrypoint: string   # path to SKILL.md relative to subdir root, e.g. "SKILL.md"
+      tree_hash:  string   # SHA256 of the full directory tree at this tag (sorted file paths)
 
   InstalledFile:
     description: In-memory representation of a fetched markdown file, used by the compiler
@@ -184,12 +203,14 @@ data_types:
   LockedDep:
     description: One entry in mln.lock
     fields:
-      name:       string
+      name:       string   # full dep name including subdir path
       version:    string
       git_tag:    string
-      repo_url:   string
-      entrypoint: string
-      checksum:   string
+      repo_url:   string   # repo root URL (not the full dep name)
+      subdir:     string   # subdirectory within repo ("" if repo root)
+      entrypoint: string   # relative path to SKILL.md within the skill directory
+      tree_hash:  string   # SHA256 tree hash over all files in the skill directory
+      files:      '[]string'  # sorted list of all file paths in the installed directory tree
 
   CompileOptions:
     description: Options passed to compiler.Compile
@@ -314,9 +335,11 @@ manifest_format:
     entrypoint: CLAUDE.md
 
     dependencies:
+      # Skill at repo root (dedicated repo)
       github.com/alice/pdf-skill: "^1.2.0"
-      github.com/alice/xlsx-skill: "^2.0.0"
-      github.com/bob/base-agent: "^1.0.0"
+      # Skill in a monorepo subdirectory — path after the repo root is the subdir
+      github.com/anthropics/skills/skills/skill-creator: "^1.0.0"
+      github.com/bob/agents/agents/base-agent: "^1.0.0"
 
     # outputs declares where mln compile writes assembled files.
     # Keys are target filenames (relative to project root).
@@ -353,18 +376,29 @@ lockfile_format:
   example: |
     generated_at: 2025-03-31T12:00:00Z
     dependencies:
-      - name: github.com/alice/xlsx-skill
+      - name: github.com/alice/pdf-skill
         version: 1.2.0
         git_tag: v1.2.0
-        repo_url: https://github.com/alice/xlsx-skill
+        repo_url: https://github.com/alice/pdf-skill
+        subdir: ""
         entrypoint: SKILL.md
-        checksum: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-      - name: github.com/alice/file-reader
-        version: 1.1.0
-        git_tag: v1.1.0
-        repo_url: https://github.com/alice/file-reader
+        tree_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        files:
+          - SKILL.md
+          - references/api.md
+          - scripts/process.py
+      - name: github.com/anthropics/skills/skills/skill-creator
+        version: 1.0.0
+        git_tag: v1.0.0
+        repo_url: https://github.com/anthropics/skills
+        subdir: skills/skill-creator
         entrypoint: SKILL.md
-        checksum: sha256:abc123...
+        tree_hash: sha256:abc123...
+        files:
+          - SKILL.md
+          - agents/grader.md
+          - references/schemas.md
+          - scripts/aggregate_benchmark.py
 
 # ─────────────────────────────────────────────
 # .mln/ local store layout
@@ -373,7 +407,7 @@ store_layout:
   description: >
     Installed packages live in .mln/ at the project root.
     Each package gets its own directory named <name>@<version>.
-    Only the entrypoint markdown file is stored — not the full repo.
+    The full skill directory tree is stored — not just the entrypoint file.
     .mln/ should be git-ignored. mln.lock should be committed.
     Compiled output files (CLAUDE.md, SKILL.md, etc.) are written to their
     declared target paths and SHOULD be committed — they are what agents consume.
@@ -419,23 +453,29 @@ phases:
       - Implement pkg/semver — IsCompatible
       - Write unit tests for manifest round-trip and semver constraint checking
       - Wire up cobra CLI skeleton with init, install, add, remove, compile subcommands
-      - Implement init command fully — interactive prompts, mln.yaml generation with inline comments, .mln/ directory creation, overwrite protection, --yes flag
-      - Write unit test for init: running with --yes in a temp dir produces a valid mln.yaml that passes manifest.Load without error
+      - Implement init command fully — interactive prompts, mln.yaml generation with
+        inline comments, .mln/ directory creation, overwrite protection, --yes flag
+      - Write unit test for init: running with --yes in a temp dir produces a valid
+        mln.yaml that passes manifest.Load without error
     done_when: >
       go test ./... passes. mln --help prints all five subcommands.
       mln init --yes in a clean directory creates a valid mln.yaml and .mln/ directory.
 
   phase_2:
     name: Fetch and store
-    goal: mln install downloads a real skill from GitHub into .mln/
+    goal: mln install downloads a real skill directory from GitHub into .mln/
     tasks:
-      - Implement internal/fetcher — Fetch (git clone + checkout + checksum)
-      - Implement internal/store — InstalledPath, List
-      - Implement internal/lockfile — Load, Save, Diff
+      - Implement internal/fetcher — parse dep name into (repoURL, subdir), shallow sparse-checkout
+        of the skill directory at the resolved tag, compute SHA256 tree hash, copy to store
+      - Implement internal/store — InstalledPath, EntrypointPath, List
+      - Implement internal/lockfile — Load, Save, Diff (LockedDep now includes subdir, tree_hash, files)
       - Wire install command end-to-end for direct deps only (no transitive resolution yet)
-      - Write integration test that installs a test fixture repo and verifies .mln/ contents
+      - Write integration test using github.com/anthropics/skills/skills/skill-creator as a real
+        fixture — assert the full directory tree appears in .mln/ and all files listed in mln.lock
+        are present on disk with matching tree hash
     done_when: >
-      mln install on a mln.yaml with one direct GitHub dep creates .mln/ and mln.lock correctly
+      mln install on a mln.yaml with one monorepo subdirectory dep creates the full skill
+      directory tree in .mln/ and writes a correct mln.lock with tree_hash and files list
 
   phase_3:
     name: Resolver
@@ -555,7 +595,20 @@ design_decisions:
       For MVP, pick the highest version satisfying all constraints and fail fast
       on true conflicts. Upgrade to PubGrub in v2 if the dep graph gets complex.
 
-  - decision: Only the entrypoint markdown file is stored in .mln/, not the full repo
+  - decision: The full skill directory is stored in .mln/, not just the entrypoint file
     rationale: >
-      Skills are markdown, not code. One file per dep keeps .mln/ tiny and avoids
-      git submodule complexity. The checksum is over this single file.
+      Real-world skills (e.g. anthropics/skills) reference sibling files from their SKILL.md —
+      scripts, references, and assets that the agent must be able to read at runtime. Storing
+      only the entrypoint file would silently break any skill that uses this pattern.
+      The fetcher uses a sparse git checkout to fetch only the skill subdirectory, not the
+      entire repo, keeping .mln/ small while preserving the full skill directory structure.
+      The checksum is a SHA256 tree hash over all files in the directory (sorted by path)
+      rather than a single file hash, giving the same tamper-detection guarantee.
+
+  - decision: Dep names encode both repo and subdirectory
+    rationale: >
+      A dep name like "github.com/anthropics/skills/skills/skill-creator" unambiguously
+      identifies both the GitHub repo (github.com/anthropics/skills) and the subdirectory
+      within it (skills/skill-creator). The fetcher splits on the known GitHub host prefix
+      to find the repo boundary. This follows the same convention Go uses for monorepo modules
+      and requires no extra metadata — the path is self-describing.
