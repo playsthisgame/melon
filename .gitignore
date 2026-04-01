@@ -1,0 +1,18 @@
+# melon package store — derived cache, do not commit
+.mln/
+
+# Compiled Go binaries
+mln
+/bin/
+
+# Go build/test cache
+*.test
+*.out
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+*.swp
