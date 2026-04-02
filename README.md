@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/melon-logo-dark.png">
-    <img src="assets/melon-logo-light.png" alt="Melon Logo" width="300">
-  </picture>
+  <img src="assets/melon-logo.png" alt="melon" width="160" />
 </p>
 
 <h1 align="center">melon</h1>
