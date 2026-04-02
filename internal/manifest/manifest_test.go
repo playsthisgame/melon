@@ -30,7 +30,7 @@ var exampleManifest = manifest.Manifest{
 
 func TestRoundTrip(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "mln.yaml")
+	path := filepath.Join(dir, "melon.yml")
 
 	err := manifest.Save(exampleManifest, path)
 	require.NoError(t, err)
@@ -43,7 +43,7 @@ func TestRoundTrip(t *testing.T) {
 
 func TestRoundTrip_OutputsPreserved(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "mln.yaml")
+	path := filepath.Join(dir, "melon.yml")
 
 	require.NoError(t, manifest.Save(exampleManifest, path))
 	loaded, err := manifest.Load(path)
@@ -53,13 +53,13 @@ func TestRoundTrip_OutputsPreserved(t *testing.T) {
 }
 
 func TestLoad_FileNotFound(t *testing.T) {
-	_, err := manifest.Load("/nonexistent/path/mln.yaml")
+	_, err := manifest.Load("/nonexistent/path/melon.yml")
 	assert.Error(t, err)
 }
 
 func TestLoad_InvalidYAML(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "mln.yaml")
+	path := filepath.Join(dir, "melon.yml")
 	require.NoError(t, os.WriteFile(path, []byte(":\tinvalid: yaml: {{{"), 0644))
 
 	_, err := manifest.Load(path)
@@ -68,12 +68,40 @@ func TestLoad_InvalidYAML(t *testing.T) {
 
 func TestSave_CreatesFile(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "mln.yaml")
+	path := filepath.Join(dir, "melon.yml")
 
 	require.NoError(t, manifest.Save(exampleManifest, path))
 
 	_, err := os.Stat(path)
 	assert.NoError(t, err)
+}
+
+// TestRoundTrip_NoOutputsBlock verifies that loading a melon.yml with no outputs
+// block and saving it back does NOT produce an empty "outputs: {}" entry.
+func TestRoundTrip_NoOutputsBlock(t *testing.T) {
+	src := `name: my-agent
+version: 1.0.0
+type: agent
+agent_compat:
+  - claude-code
+`
+	dir := t.TempDir()
+	path := filepath.Join(dir, "melon.yml")
+	require.NoError(t, os.WriteFile(path, []byte(src), 0644))
+
+	m, err := manifest.Load(path)
+	require.NoError(t, err)
+	assert.Nil(t, m.Outputs, "Outputs should be nil when not declared")
+
+	// Save and reload — outputs block must not appear.
+	require.NoError(t, manifest.Save(m, path))
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "outputs:", "saved YAML must not contain an outputs key")
+
+	m2, err := manifest.Load(path)
+	require.NoError(t, err)
+	assert.Nil(t, m2.Outputs)
 }
 
 func TestRoundTrip_EmptyOptionalFields(t *testing.T) {
@@ -85,7 +113,7 @@ func TestRoundTrip_EmptyOptionalFields(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	path := filepath.Join(dir, "mln.yaml")
+	path := filepath.Join(dir, "melon.yml")
 	require.NoError(t, manifest.Save(m, path))
 
 	loaded, err := manifest.Load(path)

@@ -7,7 +7,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Load reads and parses an mln.yaml file at the given path.
+// Load reads and parses a melon.yml file at the given path.
 func Load(path string) (Manifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

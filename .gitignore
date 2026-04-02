@@ -1,5 +1,7 @@
-# melon package store — derived cache, do not commit
-.mln/
+# melon package cache — do not commit. Skill symlinks in agent dirs (e.g.
+# .claude/skills/) point here and should be committed. Run 'mln install'
+# to restore the cache and fix symlinks after a fresh clone.
+.melon/
 
 # Compiled Go binaries
 mln

@@ -1,6 +1,6 @@
 package manifest
 
-// Manifest is the parsed representation of a project's mln.yaml.
+// Manifest is the parsed representation of a project's melon.yml.
 type Manifest struct {
 	Name         string            `yaml:"name"`
 	Version      string            `yaml:"version"`

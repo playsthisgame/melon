@@ -7,20 +7,22 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// LockFile is the in-memory representation of mln.lock.
+// LockFile is the in-memory representation of melon.lock.
 type LockFile struct {
 	GeneratedAt  string      `yaml:"generated_at"`
 	Dependencies []LockedDep `yaml:"dependencies"`
 }
 
-// LockedDep is one entry in mln.lock.
+// LockedDep is one entry in melon.lock.
 type LockedDep struct {
-	Name       string `yaml:"name"`
-	Version    string `yaml:"version"`
-	GitTag     string `yaml:"git_tag"`
-	RepoURL    string `yaml:"repo_url"`
-	Entrypoint string `yaml:"entrypoint"`
-	Checksum   string `yaml:"checksum"`
+	Name       string   `yaml:"name"`
+	Version    string   `yaml:"version"`
+	GitTag     string   `yaml:"git_tag"`
+	RepoURL    string   `yaml:"repo_url"`
+	Subdir     string   `yaml:"subdir"`
+	Entrypoint string   `yaml:"entrypoint"`
+	TreeHash   string   `yaml:"tree_hash"`
+	Files      []string `yaml:"files"`
 }
 
 // LockDiff describes what changed between two LockFile snapshots.
@@ -30,9 +32,8 @@ type LockDiff struct {
 	Updated []LockedDep // present in both but version changed
 }
 
-// Load reads and parses an mln.lock file at path.
+// Load reads and parses a melon.lock file at path.
 func Load(path string) (LockFile, error) {
-	// TODO: implement Load
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return LockFile{}, fmt.Errorf("lockfile: read %s: %w", path, err)
@@ -46,7 +47,6 @@ func Load(path string) (LockFile, error) {
 
 // Save serializes lf to YAML and writes it to path.
 func Save(lf LockFile, path string) error {
-	// TODO: implement Save
 	data, err := yaml.Marshal(lf)
 	if err != nil {
 		return fmt.Errorf("lockfile: marshal: %w", err)
@@ -59,10 +59,27 @@ func Save(lf LockFile, path string) error {
 
 // Diff computes the set of added, removed, and updated deps between old and new.
 func Diff(old, new LockFile) LockDiff {
-	// TODO: implement Diff
-	// Build maps by dep name for O(n) comparison.
-	// Added: in new but not in old.
-	// Removed: in old but not in new.
-	// Updated: in both but with different versions.
-	return LockDiff{}
+	oldMap := make(map[string]LockedDep, len(old.Dependencies))
+	for _, d := range old.Dependencies {
+		oldMap[d.Name] = d
+	}
+	newMap := make(map[string]LockedDep, len(new.Dependencies))
+	for _, d := range new.Dependencies {
+		newMap[d.Name] = d
+	}
+
+	var diff LockDiff
+	for name, newDep := range newMap {
+		if oldDep, exists := oldMap[name]; !exists {
+			diff.Added = append(diff.Added, newDep)
+		} else if oldDep.Version != newDep.Version {
+			diff.Updated = append(diff.Updated, newDep)
+		}
+	}
+	for name, oldDep := range oldMap {
+		if _, exists := newMap[name]; !exists {
+			diff.Removed = append(diff.Removed, oldDep)
+		}
+	}
+	return diff
 }

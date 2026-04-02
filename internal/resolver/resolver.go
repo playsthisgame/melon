@@ -12,12 +12,13 @@ var ErrConflict = errors.New("resolver: version conflict")
 
 // ResolvedDep is a single dependency with its pinned version.
 type ResolvedDep struct {
-	Name       string // e.g. "github.com/user/xlsx-skill"
+	Name       string // full dep name, e.g. "github.com/anthropics/skills/skills/skill-creator"
 	Version    string // exact pinned semver, e.g. "1.3.1"
-	RepoURL    string // https://github.com/user/xlsx-skill
+	RepoURL    string // https://github.com/anthropics/skills  (repo root, derived from name)
+	Subdir     string // subdirectory within the repo, e.g. "skills/skill-creator" (empty if repo root)
 	GitTag     string // e.g. "v1.3.1"
-	Entrypoint string // path inside the repo, e.g. "SKILL.md"
-	Checksum   string // SHA256 of the entrypoint file at this tag
+	Entrypoint string // path to SKILL.md relative to subdir root, e.g. "SKILL.md"
+	TreeHash   string // SHA256 of the full directory tree at this tag (sorted file paths)
 }
 
 // Resolve fetches each dependency's mln.yaml transitively, builds a directed

@@ -1,36 +1,64 @@
 package store
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/playsthisgame/melon/internal/resolver"
 )
 
-const StoreDir = ".mln"
+const StoreDir = ".melon"
 
-// dirName converts a ResolvedDep into the directory name used inside .mln/.
-// Format: <name-with-slashes-replaced-by-dashes>@<version>
+// dirName converts a ResolvedDep into the directory name used inside .melon/.
+// Slashes in the dep name are replaced with dashes.
 // e.g. "github.com/alice/xlsx-skill" at "1.2.0" -> "github.com-alice-xlsx-skill@1.2.0"
 func dirName(dep resolver.ResolvedDep) string {
 	safeName := strings.ReplaceAll(dep.Name, "/", "-")
 	return safeName + "@" + dep.Version
 }
 
-// InstalledPath returns the absolute path to dep's installed directory
-// relative to projectDir.
+// InstalledPath returns the absolute path to dep's installed directory inside .melon/.
 func InstalledPath(projectDir string, dep resolver.ResolvedDep) string {
-	// TODO: implement InstalledPath
-	// Return filepath.Join(projectDir, StoreDir, dirName(dep))
-	return ""
+	return filepath.Join(projectDir, StoreDir, dirName(dep))
 }
 
-// List returns all ResolvedDeps currently present in the .mln/ directory
-// under projectDir by reading directory names and parsing them.
+// EntrypointPath returns the absolute path to the dep's entrypoint markdown file.
+func EntrypointPath(projectDir string, dep resolver.ResolvedDep) string {
+	return filepath.Join(InstalledPath(projectDir, dep), dep.Entrypoint)
+}
+
+// List returns all ResolvedDeps currently present in the .melon/ directory.
+// Only Name and Version are populated; the caller cross-references melon.lock for
+// full dep info.
 func List(projectDir string) ([]resolver.ResolvedDep, error) {
-	// TODO: implement List
-	// 1. Read projectDir/.mln/ entries.
-	// 2. For each directory entry matching "<name>@<version>", reconstruct a
-	//    ResolvedDep with Name and Version populated (other fields will be
-	//    populated from mln.lock by the caller).
-	return nil, nil
+	storeDir := filepath.Join(projectDir, StoreDir)
+	entries, err := os.ReadDir(storeDir)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var deps []resolver.ResolvedDep
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		at := strings.LastIndex(name, "@")
+		if at < 0 {
+			continue
+		}
+		safeName := name[:at]
+		version := name[at+1:]
+		// Reverse the safe name back to the dep name (best-effort; "/" were replaced with "-").
+		// The caller is expected to cross-reference mln.lock for the real name.
+		deps = append(deps, resolver.ResolvedDep{
+			Name:    strings.ReplaceAll(safeName, "-", "/"),
+			Version: version,
+		})
+	}
+	return deps, nil
 }

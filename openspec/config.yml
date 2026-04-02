@@ -1,14 +1,55 @@
 project:
   name: melon
+  codename: melon
+  command: mln
   description: >
     A dependency manager for agentic markdown files (SKILL.md, AGENT.md, CLAUDE.md, etc.).
     Works like Go modules — packages are referenced by their GitHub URL, versioned by git tags,
-    and resolved into a reproducible lock file. The primary artifact is a CLI tool (codename: melon, command: mln) written in Go.
-    The tool has two distinct stages: install (fetch deps into .mln/) and compile (detect conflicts,
-    assemble, and write final markdown files to the target paths that agents expect).
+    and resolved into a reproducible lock file. The primary artifact is a CLI tool written in Go.
+    mln install is the single meaningful command: it resolves deps, fetches skill directories
+    at pinned versions via sparse git checkout, writes mln.lock, and copies each skill to the
+    correct agent directory derived from agent_compat. No compile step — placement happens
+    as part of install.
   language: go
   go_version: "1.22"
   module_path: github.com/your-username/melon
+
+# ─────────────────────────────────────────────
+# Agent directory conventions
+# Sourced from the vercel-labs/skills agent table.
+# Used by install to derive placement paths from agent_compat.
+# ─────────────────────────────────────────────
+agent_directory_conventions:
+  claude-code:
+    project: .claude/skills/
+    global: ~/.claude/skills/
+  cursor:
+    project: .agents/skills/
+    global: ~/.cursor/skills/
+  codex:
+    project: .agents/skills/
+    global: ~/.codex/skills/
+  opencode:
+    project: .agents/skills/
+    global: ~/.config/opencode/skills/
+  windsurf:
+    project: .windsurf/skills/
+    global: ~/.codeium/windsurf/skills/
+  gemini-cli:
+    project: .agents/skills/
+    global: ~/.gemini/skills/
+  github-copilot:
+    project: .agents/skills/
+    global: ~/.copilot/skills/
+  roo:
+    project: .roo/skills/
+    global: ~/.roo/skills/
+  cline:
+    project: .agents/skills/
+    global: ~/.agents/skills/
+  amp:
+    project: .agents/skills/
+    global: ~/.config/agents/skills/
 
 # ─────────────────────────────────────────────
 # Directory structure to scaffold
@@ -18,20 +59,20 @@ scaffold:
     - cmd/mln              # main package — CLI entrypoint
     - internal/manifest    # mln.yaml read/write
     - internal/resolver    # dependency graph + semver resolution
-    - internal/fetcher     # GitHub clone, tag checkout, checksum
-    - internal/lockfile    # mln.lock read/write
-    - internal/store       # local .mln/ install directory management
-    - internal/injector    # assemble installed markdown files into ordered string
-    - internal/compiler    # conflict detection, assembly, and output file placement
+    - internal/fetcher     # sparse git checkout, tree hash, copy to store
+    - internal/lockfile    # mln.lock read/write + diff
+    - internal/store       # .mln/ directory management
+    - internal/placer      # copy from .mln/ to agent directories
+    - internal/agents      # agent_compat -> directory path table
     - pkg/semver           # thin semver helpers (wrap golang.org/x/mod/semver)
     - testdata             # fixture mln.yaml and mln.lock files for tests
-    - testdata/conflicts   # fixture sets that exercise conflict detection
 
   files:
     - path: cmd/mln/main.go
       description: >
-        Cobra CLI root command. Registers subcommands: init, install, add, remove, compile.
+        Cobra CLI root command. Registers subcommands: init, install, add, remove.
         Reads global flags: --dir (project root, default cwd), --verbose.
+        No compile subcommand — placement is part of install.
 
     - path: internal/manifest/manifest.go
       description: >
@@ -42,97 +83,79 @@ scaffold:
     - path: internal/manifest/schema.go
       description: >
         Go structs used by the manifest parser.
-        See the 'data_types' section below for field definitions.
+        The outputs field is optional — if absent, install derives placement
+        paths from agent_compat via internal/agents.
+        The agent_compat field is a []string of agent names from the
+        agent_directory_conventions table.
 
     - path: internal/resolver/resolver.go
       description: >
         Implements Resolve(manifest Manifest) ([]ResolvedDep, error).
-        Fetches each dependency's mln.yaml transitively, builds a directed
-        acyclic graph, and returns a flat list of pinned versions.
-        Use a simple greedy highest-compatible-version strategy for MVP
-        (full PubGrub can come in v2). Returns ErrConflict if two packages
-        require incompatible versions of a shared transitive dep.
+        Fetches each dependency's mln.yaml from GitHub raw content API transitively,
+        builds a directed acyclic graph, and returns a flat list of pinned versions.
+        Uses a greedy highest-compatible-version strategy for MVP (PubGrub in v2).
+        Returns ErrVersionConflict if two packages require incompatible versions of
+        a shared transitive dep, with a human-readable message naming the conflict.
 
     - path: internal/fetcher/fetcher.go
       description: >
-        Implements Fetch(dep ResolvedDep, installDir string) error.
-        A skill is a directory, not a single file, so the fetcher must clone
-        and store the entire skill directory tree.
+        Implements Fetch(dep ResolvedDep, storeDir string) error.
+        Fetches the entire skill directory tree at the pinned git tag via sparse checkout.
 
         Algorithm:
-          1. Parse dep.name into (repoURL, subdir). A dep name like
-             "github.com/anthropics/skills/skills/skill-creator" maps to
-             repo "https://github.com/anthropics/skills" and subdir "skills/skill-creator".
-             A dep with no subdir (e.g. "github.com/alice/pdf-skill") has subdir "".
-          2. Shallow-clone the repo at the resolved tag into a temp directory:
+          1. Parse dep.name into (repoURL, subdir). A name like
+             "anthropics/skills/skills/skill-creator" maps to repo
+             "https://github.com/anthropics/skills" and subdir "skills/skill-creator".
+             A dep with no subdir (e.g. "alice/pdf-skill") has subdir "".
+          2. Shallow-clone at the resolved tag into a temp directory:
                git clone --depth=1 --branch <tag> --no-checkout <repoURL> <tmpdir>
-          3. Sparse-checkout only the skill subdirectory (or repo root if subdir is ""):
+          3. Sparse-checkout the skill subdirectory:
                git -C <tmpdir> sparse-checkout set <subdir or ".">
                git -C <tmpdir> checkout
-          4. Copy the subdirectory tree from <tmpdir>/<subdir> into installDir.
-          5. Compute a SHA256 tree hash over all files in the copied directory
-             (sorted by relative path for determinism) and compare against dep.tree_hash
-             from mln.lock. Fail if mismatch.
-          6. Delete <tmpdir>.
-          7. Skip steps 1-6 entirely if installDir already exists and tree hash matches
-             (idempotent install).
+          4. Copy the subdirectory tree into storeDir.
+          5. Compute SHA256 tree hash over all files sorted by relative path.
+             Compare against dep.tree_hash from mln.lock — fail on mismatch.
+          6. Delete tmpdir.
+          7. Skip entirely if storeDir already exists and tree hash matches (idempotent).
 
-        No GitHub API calls — pure git via os/exec.
+        Also exposes LatestTag(owner, repo string) (string, error) using the
+        GitHub API to find the latest semver tag. Used by mln add.
 
     - path: internal/lockfile/lockfile.go
       description: >
         Defines LockFile struct. Exposes Load, Save, and Diff(old, new LockFile).
-        Diff is used by the CLI to print what changed after install.
+        Diff returns added, removed, and updated LockedDep slices for CLI output.
 
     - path: internal/store/store.go
       description: >
-        Manages the .mln/ directory inside the user's project.
-        Exposes InstalledPath(dep ResolvedDep) string and List() []ResolvedDep.
-        Handles the directory layout: .mln/<name>@<version>/
+        Manages the .mln/ cache directory inside the user's project.
+        Exposes InstalledPath(dep ResolvedDep, projectDir string) string,
+        EntrypointPath(dep ResolvedDep, projectDir string) string, and
+        List(projectDir string) []ResolvedDep.
+        Directory layout: .mln/<encoded-name>@<version>/
+        encoded-name replaces "/" with "-" for filesystem safety.
 
-    - path: internal/injector/injector.go
+    - path: internal/placer/placer.go
       description: >
-        Assembles installed markdown files into a single ordered string.
-        Respects install order from the lock file.
-        Exposes Assemble(files []InstalledFile) string.
-        Prepends each file's content with a header comment: "# skill: <name>@<version>".
-        Internal primitive used only by the compiler — not called directly by the CLI.
+        Copies installed skill directories from .mln/ to the appropriate agent
+        directories. Exposes Place(deps []ResolvedDep, manifest Manifest, projectDir string) error.
+        Algorithm:
+          1. Call agents.DeriveTargets(manifest) to get the list of target base paths.
+             If manifest.outputs is declared, use that instead.
+          2. For each dep, copy its directory from store.InstalledPath() into
+             each target base path as a subdirectory named after the skill
+             (last path segment of dep.name, e.g. "skill-creator").
+          3. Overwrite existing files — install is always authoritative.
+          4. Print a summary of what was placed and where.
+        Placement is idempotent — running install twice produces the same result.
 
-    - path: internal/compiler/compiler.go
+    - path: internal/agents/agents.go
       description: >
-        Orchestrates the full compile pipeline. Exposes Compile(opts CompileOptions) error.
-        Steps in order:
-          1. Load mln.lock — fail with ErrNotInstalled if missing (run mln install first).
-          2. Load each installed markdown file from .mln/ via the store into []InstalledFile.
-          3. Run conflict detection via detector.Detect(). If any conflicts are found, call
-             report.Print() and return ErrConflict. Do not write any output files on conflict.
-          4. If clean, group InstalledFiles by their declared output target from mln.yaml outputs block.
-          5. Call injector.Assemble per output target group.
-          6. Write each assembled string to its declared target path on disk.
-          7. Print a summary of written files (path + how many skills assembled into it).
-
-    - path: internal/compiler/detector.go
-      description: >
-        Implements structural conflict detection.
-        Exposes Detect(files []InstalledFile) []Conflict.
-        A Conflict is raised when two or more installed files define the same directive
-        key with different values. Directives are identified by a line-prefix convention:
-        any markdown line beginning with "@directive:" is a structured directive.
-        Example: "@directive:response-format: bullet-points"
-        Plain prose is NOT conflict-checked in MVP — only lines matching the @directive prefix.
-        Returns a []Conflict slice. An empty slice means the install is clean and safe to assemble.
-
-    - path: internal/compiler/report.go
-      description: >
-        Formats a []Conflict into a human-readable terminal report.
-        For each conflict, prints:
-          - the directive key in conflict
-          - which packages define it
-          - each package's conflicting value
-          - a suggested resolution: remove one conflicting dep from mln.yaml,
-            or add a manual override directive in the mln.yaml outputs block.
-        No auto-resolution in MVP. The user must resolve conflicts manually.
-        Exits with a non-zero code so CI pipelines fail visibly.
+        Encodes the agent_directory_conventions table (see top of this config).
+        Exposes DeriveTargets(manifest Manifest) ([]string, error) which returns
+        the project-scoped skill directory for each agent in manifest.agent_compat.
+        Returns ErrUnknownAgent if an agent_compat value is not in the table.
+        This is the single source of truth for agent path conventions in melon.
 
     - path: pkg/semver/semver.go
       description: >
@@ -148,250 +171,169 @@ data_types:
   Manifest:
     description: Parsed representation of a project's mln.yaml
     fields:
-      name:        string        # e.g. "my-agent"
-      version:     string        # semver, e.g. "1.0.0"
-      description: string
-      entrypoint:  string        # relative path to the main markdown file, e.g. "SKILL.md"
-      type:        string        # enum: skill | agent | workflow | persona | memory
+      name:         string
+      version:      string        # semver, e.g. "1.0.0"
+      description:  string
+      type:         string        # enum: skill | agent | workflow | persona | memory
       dependencies:
-        type: map[string]string  # name -> version constraint, e.g. "github.com/user/xlsx-skill": "^1.2.0"
+        type: map[string]string   # dep name -> semver constraint
+                                  # "alice/pdf-skill": "^1.2.0"
+                                  # "anthropics/skills/skills/skill-creator": "^1.0.0"
       outputs:
-        type: map[string]string  # target filename -> glob of dep names to include
-                                 # e.g. "CLAUDE.md": "*" or ".claude/SKILL.md": "github.com/alice/*"
-                                 # Determines where mln compile writes assembled files.
-      tags:        '[]string'
-      agent_compat: '[]string'  # e.g. ["claude", "gpt-4"]
+        type: map[string]string   # OPTIONAL override: target base path -> dep name glob
+                                  # e.g. ".claude/skills/": "*"
+                                  # If absent, derived automatically from agent_compat.
+      agent_compat: '[]string'    # e.g. ["claude-code", "cursor"]
+                                  # Drives automatic placement path derivation.
+      tags:         '[]string'
 
   ResolvedDep:
-    description: A single dependency with its pinned version, output of the resolver
+    description: Single dependency with pinned version, output of the resolver
     fields:
-      name:       string   # full dep name, e.g. "github.com/anthropics/skills/skills/skill-creator"
-      version:    string   # exact pinned semver, e.g. "1.3.1"
-      repo_url:   string   # https://github.com/anthropics/skills  (repo root, derived from name)
-      subdir:     string   # subdirectory within the repo, e.g. "skills/skill-creator" (empty if repo root)
+      name:       string   # e.g. "anthropics/skills/skills/skill-creator"
+      version:    string   # exact pinned semver e.g. "1.3.1"
+      repo_url:   string   # https://github.com/anthropics/skills
+      subdir:     string   # "skills/skill-creator" or "" if repo root
       git_tag:    string   # e.g. "v1.3.1"
-      entrypoint: string   # path to SKILL.md relative to subdir root, e.g. "SKILL.md"
-      tree_hash:  string   # SHA256 of the full directory tree at this tag (sorted file paths)
-
-  InstalledFile:
-    description: In-memory representation of a fetched markdown file, used by the compiler
-    fields:
-      dep_name:   string        # e.g. "github.com/user/xlsx-skill"
-      version:    string        # e.g. "1.3.1"
-      content:    string        # raw markdown content of the entrypoint file
-      directives: '[]Directive' # parsed from content by the compiler
-
-  Directive:
-    description: A structured instruction line parsed from a markdown file
-    fields:
-      key:    string   # e.g. "response-format"
-      value:  string   # e.g. "bullet-points"
-      source: string   # dep_name that defined this directive — used in conflict reports
-
-  Conflict:
-    description: Two or more deps defining the same directive key with different values
-    fields:
-      key:       string        # the conflicting directive key
-      instances: '[]Directive' # all definitions of this key across installed files
+      entrypoint: string   # relative path to SKILL.md within skill directory
+      tree_hash:  string   # SHA256 over sorted file paths + contents
 
   LockFile:
     description: Written to mln.lock — reproducible install snapshot
     fields:
-      generated_at: string        # RFC3339 timestamp
+      generated_at: string
       dependencies: '[]LockedDep'
 
   LockedDep:
     description: One entry in mln.lock
     fields:
-      name:       string   # full dep name including subdir path
+      name:       string
       version:    string
+      repo_url:   string
+      subdir:     string
       git_tag:    string
-      repo_url:   string   # repo root URL (not the full dep name)
-      subdir:     string   # subdirectory within repo ("" if repo root)
-      entrypoint: string   # relative path to SKILL.md within the skill directory
-      tree_hash:  string   # SHA256 tree hash over all files in the skill directory
-      files:      '[]string'  # sorted list of all file paths in the installed directory tree
-
-  CompileOptions:
-    description: Options passed to compiler.Compile
-    fields:
-      project_dir: string   # root of the project (where mln.yaml and mln.lock live)
-      dry_run:     bool     # if true, print what would be written but do not write files
-      check_only:  bool     # if true, run conflict detection only, do not write files
+      entrypoint: string
+      tree_hash:  string
+      files:      '[]string'   # sorted list of all file paths in the installed directory
 
 # ─────────────────────────────────────────────
-# CLI commands to implement
+# CLI commands
 # ─────────────────────────────────────────────
 commands:
 
   init:
     usage: mln init
     description: >
-      Interactively scaffolds a new mln.yaml in the current directory and creates the .mln/ store
-      directory. Asks the user a small number of questions, writes a fully commented mln.yaml with
-      sensible defaults, and exits. Does not run install or compile. Safe to run in an existing
-      project — will not overwrite an existing mln.yaml without explicit confirmation.
-    interactive_prompts:
-      - field: name
-        question: "Project name?"
-        default: current directory name
-      - field: type
-        question: "Package type?"
-        options: [skill, agent, workflow, persona, memory]
-        default: agent
-      - field: description
-        question: "Short description?"
-        default: ""
-      - field: agent_compat
-        question: "Target agent(s)?"
-        options: [claude, gpt-4, gemini, all]
-        default: claude
-      - field: outputs
-        question: "Primary output file?"
-        default: CLAUDE.md
-        note: >
-          Defaults to CLAUDE.md targeting all deps ("*"). User can edit mln.yaml
-          to add additional output targets after init.
-    behavior:
-      - Creates .mln/ directory if it does not exist
-      - Writes mln.yaml with all fields populated from prompts and defaults
-      - Inline comments in the generated mln.yaml explain every field,
-        the outputs block, and the @directive convention
-      - If mln.yaml already exists, prints a warning and asks for confirmation
-        before overwriting. Default answer is no (safe).
-      - Prints a short next-steps message on success:
-          "mln.yaml created. Add dependencies with: mln add <github-path>"
-    examples:
-      - mln init
-      - mln init --yes   # skip confirmation prompts, use all defaults
+      Interactively scaffolds mln.yaml and creates .mln/ in the current directory.
+      Prompts for: name (default cwd name), type, description, agent_compat.
+      Writes a fully commented mln.yaml explaining every field.
+      Will not overwrite an existing mln.yaml without explicit confirmation.
     flags:
       - name: --yes
-        description: Accept all defaults without interactive prompts. Useful for scripting.
+        description: Accept all defaults without prompts.
+    examples:
+      - mln init
+      - mln init --yes
 
   install:
     usage: mln install
     description: >
-      Reads mln.yaml, runs the resolver, fetches all resolved deps into .mln/,
-      and writes mln.lock. If mln.lock already exists and is up-to-date, only
-      fetches missing packages (idempotent). Prints a diff of what changed.
-      Does NOT run compile — the user must run mln compile separately.
-      After a successful install, warns if compiled output files exist but are
-      older than the updated mln.lock, prompting the user to re-compile.
+      The primary command. Does everything in one step:
+        1. Reads mln.yaml
+        2. Resolves the full dependency graph
+        3. Fetches all deps not already in .mln/ with a matching tree_hash
+        4. Writes mln.lock
+        5. Copies each skill directory from .mln/ to the agent directory
+           derived from agent_compat (or declared in outputs)
+      Idempotent — running twice produces the same result.
     flags:
       - name: --frozen
-        description: Fail if mln.lock would change. Useful in CI.
+        description: Fail if mln.lock would change. For CI pipelines.
+      - name: --no-place
+        description: >
+          Fetch and lock only — skip the placement step. Useful when you want
+          to inspect .mln/ before committing to placing files in agent dirs.
+    examples:
+      - mln install
+      - mln install --frozen
+      - mln install --no-place
 
   add:
-    usage: mln add <github-path>[@<version>]
+    usage: mln add <dep>[@version]
     description: >
-      Adds a new dependency to mln.yaml under 'dependencies', then runs install.
-      If no version is specified, fetches the latest git tag and pins with ^ constraint.
-      Does NOT run compile automatically.
+      Adds a dep to mln.yaml and runs install (including placement).
+      If no version given, fetches the latest git tag and pins with ^.
     examples:
-      - mln add github.com/alice/pdf-skill
-      - mln add github.com/alice/pdf-skill@^1.2.0
+      - mln add alice/pdf-skill
+      - mln add anthropics/skills/skills/skill-creator
+      - mln add anthropics/skills/skills/skill-creator@^1.0.0
 
   remove:
-    usage: mln remove <name>
+    usage: mln remove <dep>
     description: >
-      Removes a dependency from mln.yaml by name, deletes its directory from .mln/,
-      then rewrites mln.lock. Warns that compiled output is now stale.
+      Removes a dep from mln.yaml, deletes its .mln/ directory, removes
+      its placed files from agent directories, and rewrites mln.lock.
     examples:
-      - mln remove github.com/alice/pdf-skill
-
-  compile:
-    usage: mln compile
-    description: >
-      Reads mln.lock and the installed files in .mln/. Runs structural conflict detection.
-      If any @directive conflicts are found, prints a conflict report and exits non-zero
-      without writing any files. If clean, assembles each output target declared in
-      mln.yaml's 'outputs' block and writes the assembled markdown to the declared path.
-      This is the step that produces the CLAUDE.md, SKILL.md, etc. that agents consume.
-      Compile is always a separate explicit step — never run automatically.
-    flags:
-      - name: --dry-run
-        description: >
-          Print what would be written (paths and assembled content preview) without
-          writing any files. Also runs conflict detection. Useful for reviewing output
-          before committing.
-      - name: --check
-        description: >
-          Run conflict detection only. Exit 0 if clean, non-zero if conflicts found.
-          Does not write any files. Useful in CI to gate on a clean skill set.
-    examples:
-      - mln compile
-      - mln compile --dry-run
-      - mln compile --check
+      - mln remove alice/pdf-skill
 
 # ─────────────────────────────────────────────
-# mln.yaml format (the package manifest)
+# mln.yaml format
 # ─────────────────────────────────────────────
 manifest_format:
   example: |
-    name: my-agent
+    # mln.yaml — melon manifest
+    name: my-coding-agent
     version: 1.0.0
     type: agent
-    description: My coding agent with PDF and Excel skills
-    entrypoint: CLAUDE.md
+    description: My Claude Code agent with PDF and skill-creator support
 
     dependencies:
       # Skill at repo root (dedicated repo)
-      github.com/alice/pdf-skill: "^1.2.0"
-      # Skill in a monorepo subdirectory — path after the repo root is the subdir
-      github.com/anthropics/skills/skills/skill-creator: "^1.0.0"
-      github.com/bob/agents/agents/base-agent: "^1.0.0"
+      alice/pdf-skill: "^1.2.0"
+      # Skill in a monorepo subdirectory
+      anthropics/skills/skills/skill-creator: "^1.0.0"
 
-    # outputs declares where mln compile writes assembled files.
-    # Keys are target filenames (relative to project root).
-    # Values are glob patterns matching dep names to include in that file.
-    # "*" means all installed deps.
-    outputs:
-      CLAUDE.md: "*"
-      .claude/SKILL.md: "github.com/alice/*"
+    # agent_compat tells mln install where to place skill directories.
+    # Known agents and their paths:
+    #   claude-code  -> .claude/skills/<skill-name>/
+    #   cursor       -> .agents/skills/<skill-name>/
+    #   codex        -> .agents/skills/<skill-name>/
+    #   windsurf     -> .windsurf/skills/<skill-name>/
+    #   opencode     -> .agents/skills/<skill-name>/
+    agent_compat:
+      - claude-code
+
+    # outputs is optional. Declare only when you need non-standard placement.
+    # If omitted, paths are derived from agent_compat above.
+    # outputs:
+    #   .claude/skills/: "*"
 
     tags:
       - coding-agent
-    agent_compat:
-      - claude
-
-  directive_convention: |
-    Skills declare structured directives using the @directive: prefix.
-    These are parsed by the compiler's conflict detector.
-    Any line in a SKILL.md or AGENT.md in the format:
-      @directive:<key>: <value>
-    is treated as a structured instruction.
-
-    Examples:
-      @directive:response-format: prose
-      @directive:code-block-style: fenced
-      @directive:language: typescript
-
-    Two skills defining @directive:response-format with different values
-    will produce a Conflict and block compilation until resolved by the user.
 
 # ─────────────────────────────────────────────
-# mln.lock format (the lock file)
+# mln.lock format
 # ─────────────────────────────────────────────
 lockfile_format:
   example: |
-    generated_at: 2025-03-31T12:00:00Z
+    generated_at: 2026-04-01T12:00:00Z
     dependencies:
-      - name: github.com/alice/pdf-skill
+      - name: alice/pdf-skill
         version: 1.2.0
-        git_tag: v1.2.0
         repo_url: https://github.com/alice/pdf-skill
         subdir: ""
+        git_tag: v1.2.0
         entrypoint: SKILL.md
-        tree_hash: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        tree_hash: sha256:e3b0c44298fc1c149afbf4c8996fb924...
         files:
           - SKILL.md
           - references/api.md
           - scripts/process.py
-      - name: github.com/anthropics/skills/skills/skill-creator
+      - name: anthropics/skills/skills/skill-creator
         version: 1.0.0
-        git_tag: v1.0.0
         repo_url: https://github.com/anthropics/skills
         subdir: skills/skill-creator
+        git_tag: v1.0.0
         entrypoint: SKILL.md
         tree_hash: sha256:abc123...
         files:
@@ -401,42 +343,61 @@ lockfile_format:
           - scripts/aggregate_benchmark.py
 
 # ─────────────────────────────────────────────
-# .mln/ local store layout
+# Directory layout after install
 # ─────────────────────────────────────────────
-store_layout:
+layout_after_install:
   description: >
-    Installed packages live in .mln/ at the project root.
-    Each package gets its own directory named <name>@<version>.
-    The full skill directory tree is stored — not just the entrypoint file.
-    .mln/ should be git-ignored. mln.lock should be committed.
-    Compiled output files (CLAUDE.md, SKILL.md, etc.) are written to their
-    declared target paths and SHOULD be committed — they are what agents consume.
+    After mln install, the project contains both a cache (.mln/) and the
+    placed skill files in the agent directories. .mln/ is git-ignored.
+    The placed agent directories and mln.lock are committed.
   example: |
-    .mln/                                          <- git-ignored
-      github.com-alice-xlsx-skill@1.2.0/
+    .mln/                                                    <- git-ignored
+      alice-pdf-skill@1.2.0/
         SKILL.md
-      github.com-alice-file-reader@1.1.0/
+        references/api.md
+        scripts/process.py
+      anthropics-skills-skills-skill-creator@1.0.0/
         SKILL.md
+        agents/grader.md
+        references/schemas.md
+        scripts/aggregate_benchmark.py
 
-    mln.yaml                                       <- committed
-    mln.lock                                       <- committed
-    CLAUDE.md                                      <- committed (compiled output)
-    .claude/SKILL.md                               <- committed (compiled output)
+    mln.yaml                                                 <- committed
+    mln.lock                                                 <- committed
+    .claude/skills/pdf-skill/SKILL.md                        <- committed (placed)
+    .claude/skills/pdf-skill/references/api.md               <- committed (placed)
+    .claude/skills/pdf-skill/scripts/process.py              <- committed (placed)
+    .claude/skills/skill-creator/SKILL.md                    <- committed (placed)
+    .claude/skills/skill-creator/agents/grader.md            <- committed (placed)
 
 # ─────────────────────────────────────────────
-# External dependencies (go.mod entries)
+# Go dependencies (go.mod entries)
 # ─────────────────────────────────────────────
 go_dependencies:
   - module: github.com/spf13/cobra
     reason: CLI framework for subcommands and flags
   - module: gopkg.in/yaml.v3
-    reason: mln.yaml and mln.lock parsing
+    reason: mln.yaml and mln.lock parsing and serialization
   - module: golang.org/x/mod
     reason: semver parsing and constraint checking
   - module: github.com/fatih/color
-    reason: colored terminal output for conflict reports and summaries
+    reason: colored terminal output for summaries and errors
   - module: github.com/stretchr/testify
     reason: test assertions
+
+# ─────────────────────────────────────────────
+# Distribution
+# ─────────────────────────────────────────────
+distribution:
+  primary: >
+    go install github.com/your-username/melon/cmd/mln@latest
+    Requires Go 1.22+. Installs the mln binary into $GOPATH/bin.
+  releases: >
+    Use GoReleaser with a GitHub Actions workflow triggered on git tag push.
+    Produces prebuilt binaries for macOS (arm64 + amd64), Linux, and Windows.
+  homebrew: >
+    GoReleaser can generate a Homebrew formula automatically.
+    Add when there are real users requesting it.
 
 # ─────────────────────────────────────────────
 # Development phases
@@ -445,170 +406,189 @@ phases:
 
   phase_1:
     name: Scaffold, manifest, and init
-    goal: Repo compiles, mln init works end-to-end, mln.yaml can be read and written
+    goal: >
+      Repo compiles. mln init works end-to-end. mln.yaml can be read and
+      written with helpful errors.
     tasks:
       - Initialize Go module with go mod init
       - Scaffold all directories and stub files listed above
-      - Implement internal/manifest — Load and Save including the outputs field
+      - Implement internal/agents/agents.go — DeriveTargets with full convention table
+      - Implement internal/manifest — Load and Save including optional outputs field
+        and agent_compat field
       - Implement pkg/semver — IsCompatible
-      - Write unit tests for manifest round-trip and semver constraint checking
-      - Wire up cobra CLI skeleton with init, install, add, remove, compile subcommands
+      - Write unit tests for manifest round-trip and semver constraints
+      - Write unit tests for agents.DeriveTargets — known agents return correct paths,
+        unknown agents return ErrUnknownAgent
+      - Wire up cobra CLI skeleton with init, install, add, remove subcommands
       - Implement init command fully — interactive prompts, mln.yaml generation with
         inline comments, .mln/ directory creation, overwrite protection, --yes flag
-      - Write unit test for init: running with --yes in a temp dir produces a valid
-        mln.yaml that passes manifest.Load without error
+      - Write unit test for init — --yes in a temp dir produces a valid mln.yaml
     done_when: >
-      go test ./... passes. mln --help prints all five subcommands.
-      mln init --yes in a clean directory creates a valid mln.yaml and .mln/ directory.
+      go test ./... passes. mln --help prints all four subcommands.
+      mln init --yes creates a valid mln.yaml and .mln/ directory.
 
   phase_2:
     name: Fetch and store
-    goal: mln install downloads a real skill directory from GitHub into .mln/
+    goal: mln install fetches a real skill directory from GitHub into .mln/
     tasks:
-      - Implement internal/fetcher — parse dep name into (repoURL, subdir), shallow sparse-checkout
-        of the skill directory at the resolved tag, compute SHA256 tree hash, copy to store
+      - Implement internal/fetcher — parse dep name into (repoURL, subdir),
+        shallow sparse-checkout at resolved tag, compute SHA256 tree hash,
+        copy to store, LatestTag via GitHub API
       - Implement internal/store — InstalledPath, EntrypointPath, List
-      - Implement internal/lockfile — Load, Save, Diff (LockedDep now includes subdir, tree_hash, files)
-      - Wire install command end-to-end for direct deps only (no transitive resolution yet)
-      - Write integration test using github.com/anthropics/skills/skills/skill-creator as a real
-        fixture — assert the full directory tree appears in .mln/ and all files listed in mln.lock
-        are present on disk with matching tree hash
+      - Implement internal/lockfile — Load, Save, Diff
+      - Wire install command to fetch direct deps and write mln.lock
+        (no transitive resolution and no placement yet)
+      - Write integration test using anthropics/skills/skills/skill-creator —
+        assert full directory tree in .mln/ and correct mln.lock
     done_when: >
-      mln install on a mln.yaml with one monorepo subdirectory dep creates the full skill
-      directory tree in .mln/ and writes a correct mln.lock with tree_hash and files list
+      mln install fetches the full skill directory tree into .mln/ and writes
+      a correct mln.lock with tree_hash and files list.
 
   phase_3:
-    name: Resolver
-    goal: Transitive dependencies are resolved and installed correctly
+    name: Placement
+    goal: >
+      mln install places skill directories into agent paths after fetching.
+      This completes the single-command install-and-place workflow.
     tasks:
-      - Implement internal/resolver — build full dep graph, detect version conflicts
-      - Update install command to use resolver output instead of direct deps only
-      - Handle ErrConflict with a clear human-readable error message
-      - Update add command to fetch latest tag and resolve before writing mln.yaml
-      - Write unit tests for resolver with fixture manifests covering happy path and conflict
+      - Implement internal/placer/placer.go — Place copies from .mln/ to agent dirs
+      - Wire install command to call placer.Place after fetching
+      - Implement --no-place flag on install to skip placement
+      - Implement remove command — remove from mln.yaml, delete from .mln/,
+        remove placed files from agent dirs, rewrite mln.lock
+      - "Write integration test: mln install on a project with agent_compat [claude-code] places skills into .claude/skills/<skill-name>/"
+      - "Write integration test: mln install with explicit outputs block places skills to the declared paths instead of derived paths"
+      - "Write integration test: mln remove cleans up both .mln/ and agent dirs"
     done_when: >
-      mln add on a package with transitive deps installs the full tree and writes a correct mln.lock
+      mln install fetches AND places skills in a single command.
+      mln install on agent_compat: [claude-code] writes to .claude/skills/.
+      mln remove leaves no trace in .mln/ or agent dirs.
 
   phase_4:
-    name: Compile
-    goal: mln compile detects directive conflicts and writes assembled output files
+    name: Resolver and add
+    goal: Transitive dependencies are resolved and installed correctly
     tasks:
-      - Implement internal/compiler/detector.go — parse @directive lines, produce []Conflict
-      - Implement internal/compiler/report.go — format conflict report with colored terminal output
-      - Implement internal/injector/injector.go — assemble []InstalledFile into string with headers
-      - Implement internal/compiler/compiler.go — full compile pipeline per design above
-      - Wire compile command with --dry-run and --check flags
-      - Write unit tests for detector using fixture markdown files in testdata/conflicts/:
-          - happy path: skills with no @directive lines, or no overlapping directive keys
-          - single conflict: two deps define same @directive key with different values
-          - multi-conflict: three or more conflicts across multiple deps
-      - Write integration test: mln install then mln compile writes expected output files
+      - Implement internal/resolver — fetch mln.yaml transitively via GitHub raw API,
+        build full dep graph, greedy semver resolution, ErrVersionConflict
+      - Update install to use resolver output instead of direct deps only
+      - Implement add command — LatestTag, update mln.yaml, run full install
+      - Implement --frozen flag on install
+      - Write unit tests for resolver with fixture manifests in testdata/ covering
+        happy path, transitive deps, and version conflict error message
     done_when: >
-      mln compile on a clean install writes declared output files to correct paths.
-      mln compile on a conflicting install prints readable report and exits non-zero.
-      mln compile --check exits 0 on clean, non-zero on conflict, writes nothing either way.
-      mln compile --dry-run prints assembled content preview without writing files.
+      mln add on a package with transitive deps installs and places the full
+      tree and writes a correct mln.lock.
+      mln install --frozen fails if mln.lock would change.
 
   phase_5:
-    name: Remove and polish
-    goal: Full MVP CLI is complete and usable end-to-end
+    name: Polish and release
+    goal: Full MVP CLI is complete and ready for release.
     tasks:
-      - Implement remove command — update mln.yaml, clean .mln/, rewrite mln.lock
-      - Implement --frozen flag on install
-      - Add stale-output warning to install and add — compare mln.lock mtime to output file mtimes
-      - Write README.md with install instructions, workflow guide, and @directive convention docs
-      - Add .gitignore entry recommendation (.mln/ ignored, output files and mln.lock committed)
-    done_when: All four commands work reliably on real GitHub repos end-to-end
+      - Add colored output throughout using fatih/color
+      - Write README.md — install instructions, full command reference,
+        agent_compat convention table, how melon differs from npx skills
+      - Add .gitignore entries (.mln/ ignored, agent dirs and mln.lock committed)
+      - Add .goreleaser.yaml and GitHub Actions workflow for binary releases on tag push
+    done_when: >
+      go install github.com/your-username/melon/cmd/mln@latest works from a clean machine.
+      All four commands work reliably end-to-end on real GitHub skill repos.
 
 # ─────────────────────────────────────────────
 # Testing strategy
 # ─────────────────────────────────────────────
 testing:
+  framework: go test
   unit_tests:
-    - internal/manifest: round-trip Load -> Save -> Load produces identical struct including outputs
-    - pkg/semver: table-driven tests for ^, ~, and exact version constraints
-    - internal/resolver: fixture manifests in testdata/, verify resolved versions and conflict cases
+    - internal/manifest: round-trip Load -> Save -> Load produces identical struct
+    - internal/manifest: missing required fields produce typed errors
+    - pkg/semver: table-driven tests for ^, ~, and exact constraints
+    - "internal/agents: DeriveTargets returns correct paths for known agents, ErrUnknownAgent for unknown values"
+    - "internal/resolver: fixture manifests in testdata/ — happy path, transitive, version conflict error message"
     - internal/lockfile: Diff returns correct added/removed/updated sets
-    - internal/compiler/detector: table-driven tests over fixture markdown files in testdata/conflicts/
-    - internal/injector: Assemble produces correctly ordered, correctly headered output string
+    - cmd/mln init: --yes in a temp dir produces valid mln.yaml and .mln/
 
   integration_tests:
     - description: >
-        Install a test fixture GitHub repo. Assert .mln/ and mln.lock match expected values.
+        mln install fetches a real monorepo dep. Assert .mln/ directory tree
+        and mln.lock tree_hash and files list match actual installed content.
+      fixture: anthropics/skills/skills/skill-creator
     - description: >
-        mln add on a package with one transitive dep. Assert both appear in mln.lock.
+        mln install with agent_compat: [claude-code] places skills into
+        .claude/skills/<skill-name>/. Assert files present at correct paths.
     - description: >
-        mln install --frozen after modifying mln.yaml. Assert non-zero exit code.
+        mln install with explicit outputs block places skills to declared
+        paths, not agent_compat-derived paths.
     - description: >
-        Full flow: mln install then mln compile. Assert output files exist at paths declared
-        in mln.yaml outputs block and contain correct skill header comments.
+        mln add on a dep with a transitive dep. Assert both in mln.lock
+        and both placed in agent dirs.
     - description: >
-        Install two fixture skills where one defines "@directive:response-format: prose" and
-        another defines "@directive:response-format: bullet-points". Run mln compile and assert
-        non-zero exit and conflict report on stdout. Assert no output files were written.
+        mln install --frozen after modifying mln.yaml. Assert non-zero exit.
     - description: >
-        mln compile --check on clean install exits 0 and writes nothing.
-        mln compile --check on conflicting install exits non-zero and writes nothing.
+        mln remove cleans .mln/ entry, placed files in agent dirs, and
+        rewrites mln.lock. Assert no trace remains.
 
 # ─────────────────────────────────────────────
-# Key design decisions to preserve
+# Key design decisions
 # ─────────────────────────────────────────────
 design_decisions:
-  - decision: Install and compile are always separate explicit steps
+  - decision: Placement happens during install, not as a separate compile step
     rationale: >
-      Automatically running compile after install would silently overwrite output files
-      that the user may not be ready to update. Keeping them separate gives the user
-      full control and makes the two-stage pipeline explicit and reviewable.
-      The risk of users forgetting to compile is mitigated by a stale-output warning
-      printed by install and add when mln.lock is newer than the compiled output files.
+      The compile step was originally designed to handle assembly, conflict
+      detection, and placement. After scoping down, placement was the only
+      remaining job of compile — which made it an unnecessary extra step.
+      Since placement is deterministic and has no prerequisites beyond a
+      successful fetch, folding it into install gives users a single command
+      that takes them from manifest to working agent setup. The --no-place
+      flag preserves the ability to fetch without placing for users who want
+      to inspect .mln/ first.
 
-  - decision: Compiled output files are committed, .mln/ is not
+  - decision: No compile command in MVP
     rationale: >
-      CLAUDE.md, SKILL.md, etc. are the artifacts agents consume. They should be
-      reviewable in PRs, diffable in git history, and available in fresh checkouts
-      without running mln at all. .mln/ is a derived cache like node_modules.
-      mln.lock is committed to guarantee reproducible installs across machines.
+      The compile step was conceived to handle @directive conflict detection
+      and skill assembly. Both features were deferred: conflict detection
+      requires a @directive convention that doesn't yet exist in the wild,
+      and assembly solves a problem (merging skills into one file) that real
+      users haven't demonstrated they need. Building for hypothetical problems
+      before there are real users is premature. These features can return as
+      v2 once there is evidence they are needed.
 
-  - decision: Conflict detection blocks compilation entirely — no partial output
+  - decision: Go over TypeScript
     rationale: >
-      Writing partial output when conflicts exist leaves the agent with an inconsistent
-      context that produces unpredictable behavior silently. A hard block with a clear
-      report forces the user to resolve conflicts before any assembled output is written.
+      Melon is a systems CLI — it shells out to git, reads YAML, resolves a
+      dependency graph, and copies files to disk. Go is the natural fit:
+      single binary, fast startup, no runtime dependency, trivial cross-platform
+      distribution. The switch to TypeScript was motivated solely by using the
+      vercel-labs/skills npm library as a fetching backend. Since that library
+      does not support version pinning, we write our own fetcher and Go is the
+      clear choice.
 
-  - decision: Conflict detection uses an explicit @directive convention, not prose analysis
+  - decision: Custom sparse git fetcher
     rationale: >
-      Detecting conflicts in free-form prose requires LLM evaluation and is non-deterministic.
-      For MVP, conflicts are only detectable in structured directives that skill authors
-      opt into via the @directive: prefix. This is honest about what the tool actually does
-      and gives skill authors a clear contract for what will be enforced at compile time.
-      Prose-level semantic conflict detection is a v2 feature requiring LLM integration.
+      The vercel-labs/skills CLI always pulls from the latest default branch
+      with no support for version pinning. Melon's core promise is a lock file
+      that guarantees reproducible installs. A fetcher that ignores version pins
+      breaks that promise at the foundation. The sparse git checkout approach
+      is straightforward and gives melon full control.
 
-  - decision: No central registry for MVP
+  - decision: Output paths derived from agent_compat, with outputs as an override
     rationale: >
-      Package paths are GitHub URLs, matching Go module conventions.
-      Eliminates registry infrastructure entirely. Discovery is a v2 problem,
-      solved later via a pkg.go.dev-style index.
+      The agent directory conventions are stable and well-known. Deriving paths
+      automatically from agent_compat makes the common case zero-config.
+      The outputs block exists for non-standard placement and multi-agent projects.
+
+  - decision: Placed files and mln.lock are committed, .mln/ is not
+    rationale: >
+      Placed skill files are what agents consume. They should be in version
+      control — reviewable in PRs, available in fresh checkouts, diffable when
+      skills update. .mln/ is a fetch cache, like node_modules. mln.lock
+      guarantees that any machine can reproduce the same fetch.
 
   - decision: Greedy semver resolution for MVP, not PubGrub
     rationale: >
-      PubGrub produces better error messages but is significantly more complex.
-      For MVP, pick the highest version satisfying all constraints and fail fast
-      on true conflicts. Upgrade to PubGrub in v2 if the dep graph gets complex.
+      PubGrub is more complex for marginally better error messages. For MVP,
+      greedy resolution is sufficient. Upgrade in v2 if needed.
 
-  - decision: The full skill directory is stored in .mln/, not just the entrypoint file
+  - decision: No central registry for MVP
     rationale: >
-      Real-world skills (e.g. anthropics/skills) reference sibling files from their SKILL.md —
-      scripts, references, and assets that the agent must be able to read at runtime. Storing
-      only the entrypoint file would silently break any skill that uses this pattern.
-      The fetcher uses a sparse git checkout to fetch only the skill subdirectory, not the
-      entire repo, keeping .mln/ small while preserving the full skill directory structure.
-      The checksum is a SHA256 tree hash over all files in the directory (sorted by path)
-      rather than a single file hash, giving the same tamper-detection guarantee.
-
-  - decision: Dep names encode both repo and subdirectory
-    rationale: >
-      A dep name like "github.com/anthropics/skills/skills/skill-creator" unambiguously
-      identifies both the GitHub repo (github.com/anthropics/skills) and the subdirectory
-      within it (skills/skill-creator). The fetcher splits on the known GitHub host prefix
-      to find the repo boundary. This follows the same convention Go uses for monorepo modules
-      and requires no extra metadata — the path is self-describing.
+      Dep names are GitHub references and self-describing. Registry
+      infrastructure is a v2 problem. skillsmp.com and skills.sh already
+      serve discovery for the broader ecosystem.
