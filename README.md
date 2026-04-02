@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/melon-logo.png" alt="melon" width="160" />
+  <img src="assets/melon-logo.png" alt="melon" width="300" />
 </p>
 
 <h1 align="center">melon</h1>
@@ -11,6 +11,7 @@
 <p align="center">
   <a href="#installation">Installation</a> ·
   <a href="#quick-start">Quick Start</a> ·
+  <a href="#how-it-works">How it works</a> ·
   <a href="#manifest-reference">Manifest Reference</a> ·
   <a href="#commands">Commands</a>
 </p>
@@ -19,7 +20,7 @@
 
 ## What is melon?
 
-Melon manages markdown-based packages — skills, agents, workflows, personas, and memory files — that AI coding assistants read as context. It resolves dependencies from GitHub, caches them in `.melon/`, and links them into your agent's expected directory (e.g. `.claude/skills/`) so they are available immediately.
+Melon manages markdown-based packages — skills, agents, workflows, personas, and memory files — that AI coding assistants read as context. It resolves dependencies from GitHub, fetches them into a local cache, and places them into your agent's expected directory (e.g. `.claude/skills/`) so they are available immediately.
 
 ## Installation
 
@@ -62,7 +63,7 @@ Versions can be a semver constraint (`^1.2.0`, `~2.0.0`, `1.0.0`) or a branch na
 mln install
 ```
 
-Melon resolves each dependency, fetches it via sparse git checkout, writes `melon.lock`, and creates symlinks in your agent directories.
+Melon resolves each dependency, fetches it via sparse git checkout, writes `melon.lock`, and places skills into your agent directories.
 
 ```
   resolving github.com/alice/pdf-skill (^1.2.0)...
@@ -74,15 +75,13 @@ Melon resolves each dependency, fetches it via sparse git checkout, writes `melo
 ## How it works
 
 ```
-melon.yml          — declares your dependencies and target agents     ← commit this
-melon.lock         — pins exact versions, git tags, and content hashes ← commit this
-.claude/skills/    — symlinks into .melon/ created by mln install     ← commit this
-.melon/            — local cache (git-ignored); one directory per dep@version
+melon.yml          — declares your dependencies and target agents      ← commit
+melon.lock         — pins exact versions, git tags, and content hashes ← commit
+.melon/            — local cache; one directory per dep@version        ← commit
+.claude/skills/    — symlinks into .melon/ created by mln install      ← commit
 ```
 
-Skills are fetched once and cached in `.melon/`. Agent directories contain symlinks back into `.melon/`, so there is only ever one copy of each skill on disk. Re-running `mln install` is idempotent — it skips fetches whose tree hash already matches and recreates symlinks in place.
-
-**Committing skills to git:** The symlinks in your agent directories (e.g. `.claude/skills/`) should be committed. The `.melon/` cache is gitignored, so after a fresh clone the symlinks exist but their targets are missing — run `mln install` once to restore the cache and everything works again.
+Skills are fetched once into `.melon/` and symlinked into agent directories. Committing everything means skills are available to the whole team immediately after cloning — no extra step needed. Re-running `mln install` is idempotent: it skips fetches whose tree hash already matches and recreates symlinks in place.
 
 ## Manifest Reference
 
@@ -101,7 +100,7 @@ dependencies:
   github.com/anthropics/skills/skills/skill-creator: "main"
   github.com/alice/pdf-skill: "^1.2.0"
 
-# agent_compat drives where mln install places skill symlinks.
+# agent_compat drives where mln install places skills.
 # Melon knows the conventions for each agent automatically:
 #   claude-code    -> .claude/skills/
 #   cursor         -> .agents/skills/
@@ -157,12 +156,12 @@ mln init --dir ./app  # initialize in a different directory
 
 ### `mln install`
 
-Resolve dependencies, fetch them into `.melon/`, write `melon.lock`, and create symlinks in agent directories.
+Resolve dependencies, fetch them into `.melon/`, write `melon.lock`, and symlink skills into agent directories.
 
 ```sh
 mln install
 mln install --frozen    # fail if melon.lock would change (useful in CI)
-mln install --no-place  # fetch and lock only — skip symlinking into agent dirs
+mln install --no-place  # fetch and lock only — skip placement into agent dirs
 ```
 
 ### `mln add`
@@ -196,18 +195,6 @@ Use `--frozen` in CI to ensure the lock file is always up to date:
 ```sh
 mln install --frozen
 ```
-
-## `.gitignore`
-
-Add `.melon/` to your `.gitignore` — it is the local package cache and should not be committed. The skill symlinks in your agent directories (`.claude/skills/`, etc.) **should** be committed so the whole team has skills available immediately after cloning.
-
-```gitignore
-# melon package cache — skill symlinks in agent dirs point here.
-# Run 'mln install' to restore after a fresh clone.
-.melon/
-```
-
-After a fresh clone, symlinks exist but their targets are missing. Running `mln install` fetches all dependencies from `melon.lock` and restores the cache.
 
 ## License
 
