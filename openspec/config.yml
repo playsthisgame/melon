@@ -7,7 +7,7 @@ project:
     Works like Go modules — packages are referenced by their GitHub URL, versioned by git tags,
     and resolved into a reproducible lock file. The primary artifact is a CLI tool written in Go.
     mln install is the single meaningful command: it resolves deps, fetches skill directories
-    at pinned versions via sparse git checkout, writes mln.lock, and copies each skill to the
+    at pinned versions via sparse git checkout, writes melon.lock, and copies each skill to the
     correct agent directory derived from agent_compat. No compile step — placement happens
     as part of install.
   language: go
@@ -60,12 +60,12 @@ scaffold:
     - internal/manifest    # mln.yaml read/write
     - internal/resolver    # dependency graph + semver resolution
     - internal/fetcher     # sparse git checkout, tree hash, copy to store
-    - internal/lockfile    # mln.lock read/write + diff
-    - internal/store       # .mln/ directory management
-    - internal/placer      # copy from .mln/ to agent directories
+    - internal/lockfile    # melon.lock read/write + diff
+    - internal/store       # .melon/ directory management
+    - internal/placer      # copy from .melon/ to agent directories
     - internal/agents      # agent_compat -> directory path table
     - pkg/semver           # thin semver helpers (wrap golang.org/x/mod/semver)
-    - testdata             # fixture mln.yaml and mln.lock files for tests
+    - testdata             # fixture mln.yaml and melon.lock files for tests
 
   files:
     - path: cmd/mln/main.go
@@ -114,7 +114,7 @@ scaffold:
                git -C <tmpdir> checkout
           4. Copy the subdirectory tree into storeDir.
           5. Compute SHA256 tree hash over all files sorted by relative path.
-             Compare against dep.tree_hash from mln.lock — fail on mismatch.
+             Compare against dep.tree_hash from melon.lock — fail on mismatch.
           6. Delete tmpdir.
           7. Skip entirely if storeDir already exists and tree hash matches (idempotent).
 
@@ -128,16 +128,16 @@ scaffold:
 
     - path: internal/store/store.go
       description: >
-        Manages the .mln/ cache directory inside the user's project.
+        Manages the .melon/ cache directory inside the user's project.
         Exposes InstalledPath(dep ResolvedDep, projectDir string) string,
         EntrypointPath(dep ResolvedDep, projectDir string) string, and
         List(projectDir string) []ResolvedDep.
-        Directory layout: .mln/<encoded-name>@<version>/
+        Directory layout: .melon/<encoded-name>@<version>/
         encoded-name replaces "/" with "-" for filesystem safety.
 
     - path: internal/placer/placer.go
       description: >
-        Copies installed skill directories from .mln/ to the appropriate agent
+        Copies installed skill directories from .melon/ to the appropriate agent
         directories. Exposes Place(deps []ResolvedDep, manifest Manifest, projectDir string) error.
         Algorithm:
           1. Call agents.DeriveTargets(manifest) to get the list of target base paths.
@@ -199,13 +199,13 @@ data_types:
       tree_hash:  string   # SHA256 over sorted file paths + contents
 
   LockFile:
-    description: Written to mln.lock — reproducible install snapshot
+    description: Written to melon.lock — reproducible install snapshot
     fields:
       generated_at: string
       dependencies: '[]LockedDep'
 
   LockedDep:
-    description: One entry in mln.lock
+    description: One entry in melon.lock
     fields:
       name:       string
       version:    string
@@ -224,7 +224,7 @@ commands:
   init:
     usage: mln init
     description: >
-      Interactively scaffolds mln.yaml and creates .mln/ in the current directory.
+      Interactively scaffolds mln.yaml and creates .melon/ in the current directory.
       Prompts for: name (default cwd name), type, description, agent_compat.
       Writes a fully commented mln.yaml explaining every field.
       Will not overwrite an existing mln.yaml without explicit confirmation.
@@ -241,18 +241,18 @@ commands:
       The primary command. Does everything in one step:
         1. Reads mln.yaml
         2. Resolves the full dependency graph
-        3. Fetches all deps not already in .mln/ with a matching tree_hash
-        4. Writes mln.lock
-        5. Copies each skill directory from .mln/ to the agent directory
+        3. Fetches all deps not already in .melon/ with a matching tree_hash
+        4. Writes melon.lock
+        5. Copies each skill directory from .melon/ to the agent directory
            derived from agent_compat (or declared in outputs)
       Idempotent — running twice produces the same result.
     flags:
       - name: --frozen
-        description: Fail if mln.lock would change. For CI pipelines.
+        description: Fail if melon.lock would change. For CI pipelines.
       - name: --no-place
         description: >
           Fetch and lock only — skip the placement step. Useful when you want
-          to inspect .mln/ before committing to placing files in agent dirs.
+          to inspect .melon/ before committing to placing files in agent dirs.
     examples:
       - mln install
       - mln install --frozen
@@ -271,8 +271,8 @@ commands:
   remove:
     usage: mln remove <dep>
     description: >
-      Removes a dep from mln.yaml, deletes its .mln/ directory, removes
-      its placed files from agent directories, and rewrites mln.lock.
+      Removes a dep from mln.yaml, deletes its .melon/ directory, removes
+      its placed files from agent directories, and rewrites melon.lock.
     examples:
       - mln remove alice/pdf-skill
 
@@ -312,7 +312,7 @@ manifest_format:
       - coding-agent
 
 # ─────────────────────────────────────────────
-# mln.lock format
+# melon.lock format
 # ─────────────────────────────────────────────
 lockfile_format:
   example: |
@@ -347,11 +347,11 @@ lockfile_format:
 # ─────────────────────────────────────────────
 layout_after_install:
   description: >
-    After mln install, the project contains both a cache (.mln/) and the
-    placed skill files in the agent directories. .mln/ is git-ignored.
-    The placed agent directories and mln.lock are committed.
+    After mln install, the project contains both a cache (.melon/) and the
+    placed skill files in the agent directories. .melon/ is git-ignored.
+    The placed agent directories and melon.lock are committed.
   example: |
-    .mln/                                                    <- git-ignored
+    .melon/                                                    <- git-ignored
       alice-pdf-skill@1.2.0/
         SKILL.md
         references/api.md
@@ -363,7 +363,7 @@ layout_after_install:
         scripts/aggregate_benchmark.py
 
     mln.yaml                                                 <- committed
-    mln.lock                                                 <- committed
+    melon.lock                                                 <- committed
     .claude/skills/pdf-skill/SKILL.md                        <- committed (placed)
     .claude/skills/pdf-skill/references/api.md               <- committed (placed)
     .claude/skills/pdf-skill/scripts/process.py              <- committed (placed)
@@ -377,7 +377,7 @@ go_dependencies:
   - module: github.com/spf13/cobra
     reason: CLI framework for subcommands and flags
   - module: gopkg.in/yaml.v3
-    reason: mln.yaml and mln.lock parsing and serialization
+    reason: mln.yaml and melon.lock parsing and serialization
   - module: golang.org/x/mod
     reason: semver parsing and constraint checking
   - module: github.com/fatih/color
@@ -421,53 +421,34 @@ phases:
         unknown agents return ErrUnknownAgent
       - Wire up cobra CLI skeleton with init, install, add, remove subcommands
       - Implement init command fully — interactive prompts, mln.yaml generation with
-        inline comments, .mln/ directory creation, overwrite protection, --yes flag
+        inline comments, .melon/ directory creation, overwrite protection, --yes flag
       - Write unit test for init — --yes in a temp dir produces a valid mln.yaml
     done_when: >
       go test ./... passes. mln --help prints all four subcommands.
-      mln init --yes creates a valid mln.yaml and .mln/ directory.
+      mln init --yes creates a valid mln.yaml and .melon/ directory.
 
   phase_2:
     name: Fetch and store
-    goal: mln install fetches a real skill directory from GitHub into .mln/
+    goal: mln install fetches a real skill directory from GitHub into .melon/
     tasks:
       - Implement internal/fetcher — parse dep name into (repoURL, subdir),
         shallow sparse-checkout at resolved tag, compute SHA256 tree hash,
         copy to store, LatestTag via GitHub API
       - Implement internal/store — InstalledPath, EntrypointPath, List
       - Implement internal/lockfile — Load, Save, Diff
-      - Wire install command to fetch direct deps and write mln.lock
+      - Wire install command to fetch direct deps and write melon.lock
         (no transitive resolution and no placement yet)
       - Write integration test using anthropics/skills/skills/skill-creator —
-        assert full directory tree in .mln/ and correct mln.lock
+        assert full directory tree in .melon/ and correct melon.lock
     done_when: >
-      mln install fetches the full skill directory tree into .mln/ and writes
-      a correct mln.lock with tree_hash and files list.
+      mln install fetches the full skill directory tree into .melon/ and writes
+      a correct melon.lock with tree_hash and files list.
 
   phase_3:
-    name: Placement
-    goal: >
-      mln install places skill directories into agent paths after fetching.
-      This completes the single-command install-and-place workflow.
-    tasks:
-      - Implement internal/placer/placer.go — Place copies from .mln/ to agent dirs
-      - Wire install command to call placer.Place after fetching
-      - Implement --no-place flag on install to skip placement
-      - Implement remove command — remove from mln.yaml, delete from .mln/,
-        remove placed files from agent dirs, rewrite mln.lock
-      - "Write integration test: mln install on a project with agent_compat [claude-code] places skills into .claude/skills/<skill-name>/"
-      - "Write integration test: mln install with explicit outputs block places skills to the declared paths instead of derived paths"
-      - "Write integration test: mln remove cleans up both .mln/ and agent dirs"
-    done_when: >
-      mln install fetches AND places skills in a single command.
-      mln install on agent_compat: [claude-code] writes to .claude/skills/.
-      mln remove leaves no trace in .mln/ or agent dirs.
-
-  phase_4:
     name: Resolver and add
     goal: Transitive dependencies are resolved and installed correctly
     tasks:
-      - Implement internal/resolver — fetch mln.yaml transitively via GitHub raw API,
+      - Implement internal/resolver — fetch melon.yaml transitively via GitHub raw API,
         build full dep graph, greedy semver resolution, ErrVersionConflict
       - Update install to use resolver output instead of direct deps only
       - Implement add command — LatestTag, update mln.yaml, run full install
@@ -476,17 +457,17 @@ phases:
         happy path, transitive deps, and version conflict error message
     done_when: >
       mln add on a package with transitive deps installs and places the full
-      tree and writes a correct mln.lock.
-      mln install --frozen fails if mln.lock would change.
+      tree and writes a correct melon.lock.
+      mln install --frozen fails if melon.lock would change.
 
-  phase_5:
+  phase_4:
     name: Polish and release
     goal: Full MVP CLI is complete and ready for release.
     tasks:
       - Add colored output throughout using fatih/color
       - Write README.md — install instructions, full command reference,
         agent_compat convention table, how melon differs from npx skills
-      - Add .gitignore entries (.mln/ ignored, agent dirs and mln.lock committed)
+      - Add .gitignore entries (.melon/ ignored, agent dirs and melon.lock committed)
       - Add .goreleaser.yaml and GitHub Actions workflow for binary releases on tag push
     done_when: >
       go install github.com/your-username/melon/cmd/mln@latest works from a clean machine.
@@ -504,12 +485,12 @@ testing:
     - "internal/agents: DeriveTargets returns correct paths for known agents, ErrUnknownAgent for unknown values"
     - "internal/resolver: fixture manifests in testdata/ — happy path, transitive, version conflict error message"
     - internal/lockfile: Diff returns correct added/removed/updated sets
-    - cmd/mln init: --yes in a temp dir produces valid mln.yaml and .mln/
+    - cmd/mln init: --yes in a temp dir produces valid mln.yaml and .melon/
 
   integration_tests:
     - description: >
-        mln install fetches a real monorepo dep. Assert .mln/ directory tree
-        and mln.lock tree_hash and files list match actual installed content.
+        mln install fetches a real monorepo dep. Assert .melon/ directory tree
+        and melon.lock tree_hash and files list match actual installed content.
       fixture: anthropics/skills/skills/skill-creator
     - description: >
         mln install with agent_compat: [claude-code] places skills into
@@ -518,13 +499,13 @@ testing:
         mln install with explicit outputs block places skills to declared
         paths, not agent_compat-derived paths.
     - description: >
-        mln add on a dep with a transitive dep. Assert both in mln.lock
+        mln add on a dep with a transitive dep. Assert both in melon.lock
         and both placed in agent dirs.
     - description: >
         mln install --frozen after modifying mln.yaml. Assert non-zero exit.
     - description: >
-        mln remove cleans .mln/ entry, placed files in agent dirs, and
-        rewrites mln.lock. Assert no trace remains.
+        mln remove cleans .melon/ entry, placed files in agent dirs, and
+        rewrites melon.lock. Assert no trace remains.
 
 # ─────────────────────────────────────────────
 # Key design decisions
@@ -539,7 +520,7 @@ design_decisions:
       successful fetch, folding it into install gives users a single command
       that takes them from manifest to working agent setup. The --no-place
       flag preserves the ability to fetch without placing for users who want
-      to inspect .mln/ first.
+      to inspect .melon/ first.
 
   - decision: No compile command in MVP
     rationale: >
@@ -575,11 +556,11 @@ design_decisions:
       automatically from agent_compat makes the common case zero-config.
       The outputs block exists for non-standard placement and multi-agent projects.
 
-  - decision: Placed files and mln.lock are committed, .mln/ is not
+  - decision: Placed files and melon.lock are committed, .melon/ is not
     rationale: >
       Placed skill files are what agents consume. They should be in version
       control — reviewable in PRs, available in fresh checkouts, diffable when
-      skills update. .mln/ is a fetch cache, like node_modules. mln.lock
+      skills update. .melon/ is a fetch cache, like node_modules. melon.lock
       guarantees that any machine can reproduce the same fetch.
 
   - decision: Greedy semver resolution for MVP, not PubGrub

@@ -1,0 +1,9 @@
+name: test-project
+version: 0.1.0
+type: agent
+dependencies:
+  github.com/alice/pdf-skill: "^1.0.0"
+  github.com/alice/word-skill: "^1.0.0"
+# pdf-skill declares:  github.com/shared/lib: "^1.0.0"
+# word-skill declares: github.com/shared/lib: "^2.0.0"
+# These constraints are incompatible — the resolver must return ErrConflict.

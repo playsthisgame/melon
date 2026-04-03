@@ -1,0 +1,7 @@
+name: test-project
+version: 0.1.0
+type: agent
+dependencies:
+  github.com/alice/pdf-skill: "^1.0.0"
+# alice/pdf-skill itself declares: github.com/bob/base-utils: "^2.0.0"
+# so the resolver must include bob/base-utils as a transitive dep.

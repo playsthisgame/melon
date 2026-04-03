@@ -29,20 +29,69 @@ type FetchResult struct {
 //	"github.com/owner/repo/sub/dir"                            → ("https://github.com/owner/repo", "sub/dir")
 //	"github.com/owner/repo/tree/<branch>/sub/dir"              → ("https://github.com/owner/repo", "sub/dir")
 func ParseDepName(name string) (repoURL, subdir string) {
+	// Strip https:// or http:// prefix so users can paste full GitHub URLs.
+	name = strings.TrimPrefix(name, "https://")
+	name = strings.TrimPrefix(name, "http://")
+
 	parts := strings.Split(name, "/")
 	if len(parts) < 3 {
 		return "https://" + name, ""
 	}
 	repoURL = "https://" + strings.Join(parts[:3], "/")
 	rest := parts[3:]
-	// Strip GitHub web UI path segments: tree/<branch>/
-	if len(rest) >= 2 && rest[0] == "tree" {
+	// Strip GitHub web UI path segments: tree/<branch>/ or blob/<branch>/
+	if len(rest) >= 2 && (rest[0] == "tree" || rest[0] == "blob") {
 		rest = rest[2:]
 	}
 	if len(rest) > 0 {
 		subdir = strings.Join(rest, "/")
 	}
 	return repoURL, subdir
+}
+
+// LatestTag returns the highest semver tag in repoURL, regardless of constraints.
+// Returns the bare version (e.g. "1.2.3") and the git tag (e.g. "v1.2.3").
+func LatestTag(repoURL string) (version, gitTag string, err error) {
+	out, err := exec.Command("git", "ls-remote", "--tags", repoURL).Output()
+	if err != nil {
+		return "", "", fmt.Errorf("fetcher: ls-remote %s: %w", repoURL, err)
+	}
+
+	var candidates []string
+	for _, line := range strings.Split(string(out), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		ref := fields[1]
+		if !strings.HasPrefix(ref, "refs/tags/") || strings.HasSuffix(ref, "^{}") {
+			continue
+		}
+		tag := strings.TrimPrefix(ref, "refs/tags/")
+		v := tag
+		if !strings.HasPrefix(v, "v") {
+			v = "v" + v
+		}
+		if !modver.IsValid(v) {
+			continue
+		}
+		candidates = append(candidates, strings.TrimPrefix(tag, "v"))
+	}
+
+	if len(candidates) == 0 {
+		return "", "", fmt.Errorf("fetcher: no semver tags found in %s", repoURL)
+	}
+
+	sort.Slice(candidates, func(i, j int) bool {
+		return modver.Compare("v"+candidates[i], "v"+candidates[j]) < 0
+	})
+
+	best := candidates[len(candidates)-1]
+	return best, "v" + best, nil
 }
 
 // LatestMatchingVersion queries the remote repo's git tags via git ls-remote
