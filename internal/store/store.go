@@ -28,6 +28,12 @@ func EntrypointPath(projectDir string, dep resolver.ResolvedDep) string {
 	return filepath.Join(InstalledPath(projectDir, dep), dep.Entrypoint)
 }
 
+// Remove deletes dep's installed directory from the .melon/ cache.
+// It is a no-op if the directory does not exist.
+func Remove(projectDir string, dep resolver.ResolvedDep) error {
+	return os.RemoveAll(InstalledPath(projectDir, dep))
+}
+
 // List returns all ResolvedDeps currently present in the .melon/ directory.
 // Only Name and Version are populated; the caller cross-references melon.lock for
 // full dep info.

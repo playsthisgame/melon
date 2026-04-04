@@ -10,10 +10,47 @@ import (
 	"strings"
 
 	"github.com/playsthisgame/melon/internal/agents"
+	"github.com/playsthisgame/melon/internal/lockfile"
 	"github.com/playsthisgame/melon/internal/manifest"
 	"github.com/playsthisgame/melon/internal/resolver"
 	"github.com/playsthisgame/melon/internal/store"
 )
+
+// Unplace removes the agent directory symlink for each dep in every agent
+// directory derived from m.AgentCompat (or m.Outputs if declared). Missing
+// symlinks are silently ignored. Returns the first error encountered.
+func Unplace(deps []lockfile.LockedDep, m manifest.Manifest, projectDir string, out io.Writer) error {
+	var targetBases []string
+
+	if len(m.Outputs) > 0 {
+		for base := range m.Outputs {
+			targetBases = append(targetBases, base)
+		}
+	} else {
+		var err error
+		targetBases, err = agents.DeriveTargets(m.AgentCompat)
+		if err != nil {
+			return fmt.Errorf("placer: %w", err)
+		}
+	}
+
+	for _, dep := range deps {
+		skillName := dep.Name
+		if idx := strings.LastIndex(dep.Name, "/"); idx >= 0 {
+			skillName = dep.Name[idx+1:]
+		}
+
+		for _, base := range targetBases {
+			linkPath := filepath.Join(projectDir, base, skillName)
+			if err := os.Remove(linkPath); err != nil && !os.IsNotExist(err) {
+				return fmt.Errorf("placer: remove %s: %w", linkPath, err)
+			}
+			rel, _ := filepath.Rel(projectDir, linkPath)
+			fmt.Fprintf(out, "  unlinked %s (%s)\n", dep.Name, rel)
+		}
+	}
+	return nil
+}
 
 // Place creates a directory symlink for each dep in every agent directory
 // derived from m.AgentCompat (or m.Outputs if declared). Each symlink points

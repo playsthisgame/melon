@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/playsthisgame/melon/internal/lockfile"
 	"github.com/playsthisgame/melon/internal/manifest"
 	"github.com/playsthisgame/melon/internal/placer"
 	"github.com/playsthisgame/melon/internal/resolver"
@@ -91,4 +92,31 @@ func TestPlace_ReplacesStaleDirectory(t *testing.T) {
 	info, err := os.Lstat(staleDir)
 	require.NoError(t, err)
 	assert.Equal(t, os.ModeSymlink, info.Mode()&os.ModeSymlink, "stale directory must be replaced by symlink")
+}
+
+func TestUnplace_RemovesSymlink(t *testing.T) {
+	projectDir := t.TempDir()
+	dep := makeDep(t, projectDir, "github.com/alice/pdf-skill", "1.2.0")
+
+	m := manifest.Manifest{AgentCompat: []string{"claude-code"}}
+	require.NoError(t, placer.Place([]resolver.ResolvedDep{dep}, m, projectDir, &bytes.Buffer{}))
+
+	linkPath := filepath.Join(projectDir, ".claude/skills/pdf-skill")
+	_, err := os.Lstat(linkPath)
+	require.NoError(t, err, "symlink must exist before Unplace")
+
+	locked := []lockfile.LockedDep{{Name: dep.Name, Version: dep.Version}}
+	require.NoError(t, placer.Unplace(locked, m, projectDir, &bytes.Buffer{}))
+
+	_, err = os.Lstat(linkPath)
+	assert.True(t, os.IsNotExist(err), "symlink must be gone after Unplace")
+}
+
+func TestUnplace_MissingSymlinkNoError(t *testing.T) {
+	projectDir := t.TempDir()
+	m := manifest.Manifest{AgentCompat: []string{"claude-code"}}
+
+	// Symlink was never created — Unplace must succeed silently.
+	locked := []lockfile.LockedDep{{Name: "github.com/alice/pdf-skill", Version: "1.2.0"}}
+	require.NoError(t, placer.Unplace(locked, m, projectDir, &bytes.Buffer{}))
 }

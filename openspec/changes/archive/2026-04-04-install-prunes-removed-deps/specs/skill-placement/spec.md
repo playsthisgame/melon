@@ -1,3 +1,5 @@
+## MODIFIED Requirements
+
 ### Requirement: Skills are placed via symlinks
 When `mln install` places skills into agent directories, it SHALL create a directory symlink at the target location rather than copying files. The symlink SHALL point to the corresponding entry in the `.melon/` package cache. The set of skills placed SHALL include all transitive dependencies, not only direct dependencies declared in `mln.yaml`. Symlinks for dependencies that were in the previous lock but are absent from the new lock SHALL be removed from all agent directories (unless `--no-place` is set).
 
@@ -26,11 +28,9 @@ When `mln install` places skills into agent directories, it SHALL create a direc
 - **THEN** no symlinks SHALL be created or removed in any agent directory
 
 #### Scenario: Transitive dep is placed alongside direct dep
-
 - **WHEN** a direct dep `alice/pdf-skill` has a transitive dep `bob/base-utils`
 - **THEN** both `pdf-skill` and `base-utils` skill directories SHALL be symlinked in every agent directory after `mln install`
 
 #### Scenario: Stale symlink is removed when dep is no longer in melon.yml
-
 - **WHEN** `.claude/skills/pdf-skill` exists as a symlink from a previous install and `alice/pdf-skill` has been removed from `melon.yml`, and the user runs `mln install`
 - **THEN** `.claude/skills/pdf-skill` SHALL no longer exist after the command completes
