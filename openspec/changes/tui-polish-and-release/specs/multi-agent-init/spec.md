@@ -1,0 +1,27 @@
+## MODIFIED Requirements
+
+### Requirement: Multi-select agent prompt in mln init
+`mln init` SHALL present an interactive scrollable multi-select list of all known agents (from `agents.KnownAgents()`) so that users can select one or more target agents. The list SHALL be navigated with arrow keys (↑↓), selections toggled with space, and confirmed with enter. The selected agents SHALL be written to `melon.yml` as an `agent_compat` list.
+
+#### Scenario: User selects multiple agents
+- **WHEN** `mln init` is run interactively and the user toggles both `claude-code` and `cursor`
+- **THEN** the generated `melon.yml` contains `agent_compat: [claude-code, cursor]`
+
+#### Scenario: User selects a single agent
+- **WHEN** `mln init` is run interactively and the user toggles only `claude-code`
+- **THEN** the generated `melon.yml` contains `agent_compat: [claude-code]`
+
+#### Scenario: User selects no agents
+- **WHEN** `mln init` is run interactively and the user confirms with no agents toggled
+- **THEN** the generated `melon.yml` contains `agent_compat: []`
+
+#### Scenario: --yes flag skips prompt with default
+- **WHEN** `mln init --yes` is run
+- **THEN** the generated `melon.yml` contains `agent_compat: [claude-code]` without prompting
+
+### Requirement: All known agents are shown as options
+`mln init` SHALL display every agent returned by `agents.KnownAgents()` as a selectable option. The list SHALL be sorted alphabetically.
+
+#### Scenario: Full agent list is presented
+- **WHEN** the multi-select prompt is shown
+- **THEN** all 10 known agents (amp, cline, claude-code, codex, cursor, gemini-cli, github-copilot, opencode, roo, windsurf) appear as options

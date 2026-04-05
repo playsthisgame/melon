@@ -38,7 +38,7 @@ Requires Git to be available on your `PATH`.
 mln init
 ```
 
-This creates a `melon.yml` manifest and the `.melon/` cache directory. You'll be prompted for a package name, type, and which AI agents you target.
+This creates a `melon.yml` manifest and the `.melon/` cache directory. You'll be prompted for a package name, type, and which AI tools you use.
 
 **2. Add a dependency**
 
@@ -75,7 +75,7 @@ Melon resolves each dependency, fetches it via sparse git checkout, writes `melo
 ## How it works
 
 ```
-melon.yml          — declares your dependencies and target agents      ← commit
+melon.yml          — declares your dependencies and target AI tools    ← commit
 melon.lock         — pins exact versions, git tags, and content hashes ← commit
 .melon/            — local cache; one directory per dep@version        ← commit
 .claude/skills/    — symlinks into .melon/ created by mln install      ← commit
@@ -129,7 +129,7 @@ tags: []
 
 ### Supported agents
 
-| Agent | Project skills directory |
+| AI tool | Project skills directory |
 |---|---|
 | `claude-code` | `.claude/skills/` |
 | `cursor` | `.agents/skills/` |
@@ -166,11 +166,21 @@ mln install --no-place  # fetch and lock only — skip placement into agent dirs
 
 ### `mln add`
 
-*(Coming soon)* Add a dependency to `melon.yml` and run install.
+Add a dependency to `melon.yml` and run install. If no version is specified, the latest semver tag is resolved automatically.
+
+```sh
+mln add github.com/alice/pdf-skill          # resolves latest tag → ^1.2.0
+mln add github.com/alice/pdf-skill@^1.0.0   # explicit constraint
+mln add github.com/alice/pdf-skill@main     # branch pin
+```
 
 ### `mln remove`
 
-*(Coming soon)* Remove a dependency from `melon.yml` and clean up.
+Remove a dependency from `melon.yml`, unlink its agent symlinks, and delete its `.melon/` cache entry.
+
+```sh
+mln remove github.com/alice/pdf-skill
+```
 
 ## Lock file
 
@@ -195,6 +205,19 @@ Use `--frozen` in CI to ensure the lock file is always up to date:
 ```sh
 mln install --frozen
 ```
+
+## Why melon instead of npx skill installers?
+
+Many agent skill collections ship a one-liner like `npx install-skill <name>` that copies files into your project. Melon takes a different approach:
+
+| | melon | npx installers |
+| --- | --- | --- |
+| **Reproducibility** | `melon.lock` pins exact versions and content hashes | Each run may fetch a different version |
+| **Transitive deps** | Resolves the full dependency graph | Usually single-package only |
+| **Multiple agents** | `agent_compat` places skills for all your tools at once | Typically one target agent |
+| **Offline / CI** | Already-fetched deps are cached in `.melon/` | Always fetches from the network |
+| **Node.js required** | No — pure Go binary, no runtime needed | Yes |
+| **Removal** | `mln remove` unlinks symlinks and purges the cache | Usually manual |
 
 ## License
 

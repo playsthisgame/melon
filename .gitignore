@@ -7,6 +7,9 @@ mln
 *.test
 *.out
 
+# melon cache — do NOT ignore melon.lock or agent skill dirs
+.melon/
+
 # macOS
 .DS_Store
 

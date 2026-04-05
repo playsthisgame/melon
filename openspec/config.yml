@@ -380,8 +380,12 @@ go_dependencies:
     reason: mln.yaml and melon.lock parsing and serialization
   - module: golang.org/x/mod
     reason: semver parsing and constraint checking
-  - module: github.com/fatih/color
-    reason: colored terminal output for summaries and errors
+  - module: github.com/charmbracelet/bubbletea
+    reason: TUI framework for interactive prompts, progress bars, and spinners
+  - module: github.com/charmbracelet/bubbles
+    reason: pre-built TUI components — list, progress bar, spinner, text input
+  - module: github.com/charmbracelet/lipgloss
+    reason: terminal styling (colors, bold, borders) for all CLI output
   - module: github.com/stretchr/testify
     reason: test assertions
 
@@ -462,9 +466,19 @@ phases:
 
   phase_4:
     name: Polish and release
-    goal: Full MVP CLI is complete and ready for release.
+    goal: Full MVP CLI is complete, polished with a bubbletea TUI, and ready for release.
     tasks:
-      - Add colored output throughout using fatih/color
+      - Add bubbletea/bubbles/lipgloss TUI layer (replace fatih/color with lipgloss for all styled output)
+      - Rewrite mln init prompts using bubbletea — scrollable multi-select list for agent_compat
+        (arrow keys to move, space to toggle, enter to confirm) and a text input for name/version/description.
+        Use lipgloss to style the selected/unselected items with colors and a checkmark glyph.
+      - Add a bubbles progress bar to mln install — show one bar that advances as each dep is fetched,
+        label it with the current dep name (e.g. "Fetching alice/pdf-skill@1.3.0…"), and print a
+        success summary with counts at the end. Fallback to plain text if stdout is not a TTY.
+      - Add a bubbles spinner to mln add during the LatestTag network call ("Resolving latest version…")
+        and to mln remove during the install step.
+      - Use lipgloss for colored diff output in install — green for added (+), yellow for updated (~),
+        red for removed (-), bold dep names.
       - Write README.md — install instructions, full command reference,
         agent_compat convention table, how melon differs from npx skills
       - Add .gitignore entries (.melon/ ignored, agent dirs and melon.lock committed)
@@ -472,6 +486,8 @@ phases:
     done_when: >
       go install github.com/your-username/melon/cmd/mln@latest works from a clean machine.
       All four commands work reliably end-to-end on real GitHub skill repos.
+      mln init shows a scrollable agent list. mln install shows a live progress bar.
+      mln add and remove show a spinner while waiting for network/install.
 
 # ─────────────────────────────────────────────
 # Testing strategy
