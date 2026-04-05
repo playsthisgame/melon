@@ -13,7 +13,6 @@ import (
 var exampleManifest = manifest.Manifest{
 	Name:        "my-agent",
 	Version:     "1.0.0",
-	Type:        "agent",
 	Description: "My coding agent",
 	Entrypoint:  "CLAUDE.md",
 	Dependencies: map[string]string{
@@ -25,7 +24,7 @@ var exampleManifest = manifest.Manifest{
 		".claude/SKILL.md": "github.com/alice/*",
 	},
 	Tags:        []string{"coding-agent"},
-	AgentCompat: []string{"claude"},
+	ToolCompat: []string{"claude"},
 }
 
 func TestRoundTrip(t *testing.T) {
@@ -82,7 +81,7 @@ func TestRoundTrip_NoOutputsBlock(t *testing.T) {
 	src := `name: my-agent
 version: 1.0.0
 type: agent
-agent_compat:
+tool_compat:
   - claude-code
 `
 	dir := t.TempDir()
@@ -108,7 +107,6 @@ func TestRoundTrip_EmptyOptionalFields(t *testing.T) {
 	m := manifest.Manifest{
 		Name:       "minimal",
 		Version:    "0.1.0",
-		Type:       "skill",
 		Entrypoint: "SKILL.md",
 	}
 

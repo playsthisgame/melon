@@ -11,6 +11,7 @@
 <p align="center">
   <a href="#installation">Installation</a> ·
   <a href="#quick-start">Quick Start</a> ·
+  <a href="#why-melon">Why melon?</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#manifest-reference">Manifest Reference</a> ·
   <a href="#commands">Commands</a>
@@ -20,7 +21,7 @@
 
 ## What is melon?
 
-Melon manages markdown-based packages — skills, agents, workflows, personas, and memory files — that AI coding assistants read as context. It resolves dependencies from GitHub, fetches them into a local cache, and places them into your agent's expected directory (e.g. `.claude/skills/`) so they are available immediately.
+Melon manages markdown-based packages that AI coding assistants read as context. It resolves dependencies from GitHub, fetches them into a local cache, and places them into your agent's expected directory (e.g. `.claude/skills/`) so they are available immediately.
 
 ## Installation
 
@@ -63,7 +64,7 @@ Versions can be a semver constraint (`^1.2.0`, `~2.0.0`, `1.0.0`) or a branch na
 mln install
 ```
 
-Melon resolves each dependency, fetches it via sparse git checkout, writes `melon.lock`, and places skills into your agent directories.
+Melon resolves each dependency, fetches it via sparse git checkout, writes `melon.lock`, and places skills into your tool directories.
 
 ```
   resolving github.com/alice/pdf-skill (^1.2.0)...
@@ -81,7 +82,7 @@ melon.lock         — pins exact versions, git tags, and content hashes ← com
 .claude/skills/    — symlinks into .melon/ created by mln install      ← commit
 ```
 
-Skills are fetched once into `.melon/` and symlinked into agent directories. Committing everything means skills are available to the whole team immediately after cloning — no extra step needed. Re-running `mln install` is idempotent: it skips fetches whose tree hash already matches and recreates symlinks in place.
+Skills are fetched once into `.melon/` and symlinked into the configured tools directories.
 
 ## Manifest Reference
 
@@ -91,23 +92,20 @@ Skills are fetched once into `.melon/` and symlinked into agent directories. Com
 name: my-agent
 version: 0.1.0
 
-# type: skill | agent | workflow | persona | memory
-type: agent
-
 description: "My coding agent"
 
 dependencies:
   github.com/anthropics/skills/skills/skill-creator: "main"
   github.com/alice/pdf-skill: "^1.2.0"
 
-# agent_compat drives where mln install places skills.
+# tool_compat drives where mln install places skills.
 # Melon knows the conventions for each agent automatically:
 #   claude-code    -> .claude/skills/
 #   cursor         -> .agents/skills/
 #   windsurf       -> .windsurf/skills/
 #   roo            -> .roo/skills/
 #   ... (and more)
-agent_compat:
+tool_compat:
   - claude-code
 
 # outputs is optional. Use it to override the automatic placement paths.
@@ -117,17 +115,7 @@ agent_compat:
 tags: []
 ```
 
-### Supported package types
-
-| Type | Description |
-|---|---|
-| `skill` | A reusable skill or tool instructions for an AI agent |
-| `agent` | A complete agent definition with its own context and skills |
-| `workflow` | A multi-step process or automation definition |
-| `persona` | A personality or role definition |
-| `memory` | Persistent knowledge or context files |
-
-### Supported agents
+### Supported AI tools
 
 | AI tool | Project skills directory |
 |---|---|
@@ -156,7 +144,7 @@ mln init --dir ./app  # initialize in a different directory
 
 ### `mln install`
 
-Resolve dependencies, fetch them into `.melon/`, write `melon.lock`, and symlink skills into agent directories.
+Resolve dependencies, fetch them into `.melon/`, write `melon.lock`, and symlink skills into tool directories.
 
 ```sh
 mln install
@@ -206,6 +194,18 @@ Use `--frozen` in CI to ensure the lock file is always up to date:
 mln install --frozen
 ```
 
+## Why melon?
+
+As AI coding assistants become more capable, teams are building and sharing libraries of skills — reusable markdown prompts that extend what your agent can do. Without a proper dependency manager, keeping these skills consistent across developers, environments, and CI becomes a manual, error-prone process.
+
+**Melon gives you a single source of truth.** Define all the skills your project needs in one `melon.yml` file, commit it alongside your code, and every developer (and your CI pipeline) gets exactly the same set of skills with a single `mln install`.
+
+**Skills are versioned, not just copied.** Melon pins exact versions, git tags, and SHA-256 content hashes in `melon.lock`. If a skill author publishes a breaking change, your team won't silently pick it up — you'll see the diff in the lock file and upgrade intentionally. This means you can trust that the skill running in CI today is the same one that ran last week.
+
+**It works naturally with CI.** Run `mln install --frozen` in your pipeline to fail fast if the lock file is out of sync with the manifest. No surprises, no drift. Because `.melon/` and the generated symlinks are committed to the repo, CI doesn't even need network access to place skills — everything is already there.
+
+**Works across your whole team and all your tools.** List the AI tools your project uses under `tool_compat` and melon places each skill into every agent's expected directory at once. One manifest, one install command, every agent ready to go.
+
 ## Why melon instead of npx skill installers?
 
 Many agent skill collections ship a one-liner like `npx install-skill <name>` that copies files into your project. Melon takes a different approach:
@@ -214,7 +214,7 @@ Many agent skill collections ship a one-liner like `npx install-skill <name>` th
 | --- | --- | --- |
 | **Reproducibility** | `melon.lock` pins exact versions and content hashes | Each run may fetch a different version |
 | **Transitive deps** | Resolves the full dependency graph | Usually single-package only |
-| **Multiple agents** | `agent_compat` places skills for all your tools at once | Typically one target agent |
+| **Multiple agents** | `tool_compat` places skills for all your tools at once | Typically one target agent |
 | **Offline / CI** | Already-fetched deps are cached in `.melon/` | Always fetches from the network |
 | **Node.js required** | No — pure Go binary, no runtime needed | Yes |
 | **Removal** | `mln remove` unlinks symlinks and purges the cache | Usually manual |

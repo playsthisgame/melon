@@ -36,7 +36,7 @@ func TestPlace_CreatesSymlink(t *testing.T) {
 	projectDir := t.TempDir()
 	dep := makeDep(t, projectDir, "github.com/alice/pdf-skill", "1.2.0")
 
-	m := manifest.Manifest{AgentCompat: []string{"claude-code"}}
+	m := manifest.Manifest{ToolCompat: []string{"claude-code"}}
 	require.NoError(t, placer.Place([]resolver.ResolvedDep{dep}, m, projectDir, &bytes.Buffer{}))
 
 	linkPath := filepath.Join(projectDir, ".claude/skills/pdf-skill")
@@ -49,7 +49,7 @@ func TestPlace_SymlinkTargetResolvesToCache(t *testing.T) {
 	projectDir := t.TempDir()
 	dep := makeDep(t, projectDir, "github.com/alice/pdf-skill", "1.2.0")
 
-	m := manifest.Manifest{AgentCompat: []string{"claude-code"}}
+	m := manifest.Manifest{ToolCompat: []string{"claude-code"}}
 	require.NoError(t, placer.Place([]resolver.ResolvedDep{dep}, m, projectDir, &bytes.Buffer{}))
 
 	linkPath := filepath.Join(projectDir, ".claude/skills/pdf-skill")
@@ -66,7 +66,7 @@ func TestPlace_Idempotent(t *testing.T) {
 	projectDir := t.TempDir()
 	dep := makeDep(t, projectDir, "github.com/alice/pdf-skill", "1.2.0")
 
-	m := manifest.Manifest{AgentCompat: []string{"claude-code"}}
+	m := manifest.Manifest{ToolCompat: []string{"claude-code"}}
 	require.NoError(t, placer.Place([]resolver.ResolvedDep{dep}, m, projectDir, &bytes.Buffer{}))
 	// Second call must not error.
 	require.NoError(t, placer.Place([]resolver.ResolvedDep{dep}, m, projectDir, &bytes.Buffer{}))
@@ -86,7 +86,7 @@ func TestPlace_ReplacesStaleDirectory(t *testing.T) {
 	require.NoError(t, os.MkdirAll(staleDir, 0755))
 	require.NoError(t, os.WriteFile(filepath.Join(staleDir, "old.md"), []byte("old"), 0644))
 
-	m := manifest.Manifest{AgentCompat: []string{"claude-code"}}
+	m := manifest.Manifest{ToolCompat: []string{"claude-code"}}
 	require.NoError(t, placer.Place([]resolver.ResolvedDep{dep}, m, projectDir, &bytes.Buffer{}))
 
 	info, err := os.Lstat(staleDir)
@@ -98,7 +98,7 @@ func TestUnplace_RemovesSymlink(t *testing.T) {
 	projectDir := t.TempDir()
 	dep := makeDep(t, projectDir, "github.com/alice/pdf-skill", "1.2.0")
 
-	m := manifest.Manifest{AgentCompat: []string{"claude-code"}}
+	m := manifest.Manifest{ToolCompat: []string{"claude-code"}}
 	require.NoError(t, placer.Place([]resolver.ResolvedDep{dep}, m, projectDir, &bytes.Buffer{}))
 
 	linkPath := filepath.Join(projectDir, ".claude/skills/pdf-skill")
@@ -114,7 +114,7 @@ func TestUnplace_RemovesSymlink(t *testing.T) {
 
 func TestUnplace_MissingSymlinkNoError(t *testing.T) {
 	projectDir := t.TempDir()
-	m := manifest.Manifest{AgentCompat: []string{"claude-code"}}
+	m := manifest.Manifest{ToolCompat: []string{"claude-code"}}
 
 	// Symlink was never created — Unplace must succeed silently.
 	locked := []lockfile.LockedDep{{Name: "github.com/alice/pdf-skill", Version: "1.2.0"}}

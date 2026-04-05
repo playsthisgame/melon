@@ -17,7 +17,7 @@ import (
 )
 
 // Unplace removes the agent directory symlink for each dep in every agent
-// directory derived from m.AgentCompat (or m.Outputs if declared). Missing
+// directory derived from m.ToolCompat (or m.Outputs if declared). Missing
 // symlinks are silently ignored. Returns the first error encountered.
 func Unplace(deps []lockfile.LockedDep, m manifest.Manifest, projectDir string, out io.Writer) error {
 	var targetBases []string
@@ -28,7 +28,7 @@ func Unplace(deps []lockfile.LockedDep, m manifest.Manifest, projectDir string, 
 		}
 	} else {
 		var err error
-		targetBases, err = agents.DeriveTargets(m.AgentCompat)
+		targetBases, err = agents.DeriveTargets(m.ToolCompat)
 		if err != nil {
 			return fmt.Errorf("placer: %w", err)
 		}
@@ -53,7 +53,7 @@ func Unplace(deps []lockfile.LockedDep, m manifest.Manifest, projectDir string, 
 }
 
 // Place creates a directory symlink for each dep in every agent directory
-// derived from m.AgentCompat (or m.Outputs if declared). Each symlink points
+// derived from m.ToolCompat (or m.Outputs if declared). Each symlink points
 // from <agent-dir>/<skill-name> into the corresponding .melon/ cache entry.
 // Existing entries at the link path are removed before the symlink is created
 // (idempotent). Returns the first error encountered.
@@ -62,20 +62,20 @@ func Place(deps []resolver.ResolvedDep, m manifest.Manifest, projectDir string, 
 	var targetBases []string
 
 	if len(m.Outputs) > 0 {
-		// Explicit outputs override agent_compat derivation.
+		// Explicit outputs override tool_compat derivation.
 		for base := range m.Outputs {
 			targetBases = append(targetBases, base)
 		}
 	} else {
 		var err error
-		targetBases, err = agents.DeriveTargets(m.AgentCompat)
+		targetBases, err = agents.DeriveTargets(m.ToolCompat)
 		if err != nil {
 			return fmt.Errorf("placer: %w", err)
 		}
 	}
 
 	if len(targetBases) == 0 {
-		fmt.Fprintln(out, "placer: no target agent directories — set agent_compat in melon.yml")
+		fmt.Fprintln(out, "placer: no target tool directories — set tool_compat in melon.yml")
 		return nil
 	}
 

@@ -35,7 +35,7 @@ func TestPruning_InstallRemovesDep(t *testing.T) {
 	depA := makeDep(t, projectDir, "github.com/alice/pdf-skill", "1.2.0")
 	depB := makeDep(t, projectDir, "github.com/bob/base-utils", "0.5.0")
 
-	m := manifest.Manifest{AgentCompat: []string{"claude-code"}}
+	m := manifest.Manifest{ToolCompat: []string{"claude-code"}}
 
 	// Place both deps.
 	require.NoError(t, placer.Place([]resolver.ResolvedDep{depA, depB}, m, projectDir, &bytes.Buffer{}))
