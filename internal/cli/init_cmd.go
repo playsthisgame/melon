@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"bufio"
@@ -14,7 +14,6 @@ import (
 )
 
 var flagYes bool
-
 
 var initCmd = &cobra.Command{
 	Use:   "init",

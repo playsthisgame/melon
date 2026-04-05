@@ -5,5 +5,5 @@ import "github.com/playsthisgame/melon/internal/cli"
 var version = "dev"
 
 func main() {
-	cli.Run("mln", version)
+	cli.Run("melon", version)
 }

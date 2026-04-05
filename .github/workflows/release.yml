@@ -44,6 +44,9 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Copy README
+        run: cp README.md npm/README.md
+
       - name: Set version from tag
         run: |
           VERSION=${GITHUB_REF_NAME#v}

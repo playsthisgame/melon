@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/melon-logo.png" alt="melon" width="300" />
+  <img src="https://raw.githubusercontent.com/playsthisgame/melon/main/assets/melon-logo.png" alt="melon" width="300" />
 </p>
 
 <h1 align="center">melon</h1>

@@ -3,7 +3,8 @@
   "version": "0.1.1",
   "description": "A dependency manager for agentic markdown — skills, agents, and prompts for your AI tools.",
   "bin": {
-    "mln": "./bin/mln.js"
+    "mln": "./bin/mln.js",
+    "melon": "./bin/mln.js"
   },
   "scripts": {
     "postinstall": "node postinstall.js"
