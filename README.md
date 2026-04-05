@@ -17,6 +17,14 @@
   <a href="#commands">Commands</a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/playsthisgame/melon/actions/workflows/release.yml"><img src="https://github.com/playsthisgame/melon/actions/workflows/release.yml/badge.svg" alt="Release" /></a>
+  <a href="https://www.npmjs.com/package/@playsthisgame/melon"><img src="https://img.shields.io/npm/v/@playsthisgame/melon" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@playsthisgame/melon"><img src="https://img.shields.io/npm/dm/@playsthisgame/melon" alt="npm downloads" /></a>
+  <a href="https://pkg.go.dev/github.com/playsthisgame/melon"><img src="https://pkg.go.dev/badge/github.com/playsthisgame/melon.svg" alt="Go Reference" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/playsthisgame/melon" alt="License" /></a>
+</p>
+
 ---
 
 ## What is melon?
@@ -24,6 +32,14 @@
 Melon manages markdown-based packages that AI coding assistants read as context. It resolves dependencies from GitHub, fetches them into a local cache, and places them into your agent's expected directory (e.g. `.claude/skills/`) so they are available immediately.
 
 ## Installation
+
+**📦 Global install**
+
+```sh
+npm install -g @playsthisgame/melon
+```
+
+**🐹 Go**
 
 ```sh
 go install github.com/playsthisgame/melon/cmd/mln@latest
