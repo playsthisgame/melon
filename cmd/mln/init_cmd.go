@@ -15,6 +15,7 @@ import (
 
 var flagYes bool
 
+
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Scaffold a new melon.yml and create the .melon/ store directory",
@@ -223,5 +224,5 @@ dependencies: {}
 
 
 tags: []
-`, name, version, escapedDesc, toolCompatBlock)
+`, name, "0.1.0", escapedDesc, toolCompatBlock)
 }
