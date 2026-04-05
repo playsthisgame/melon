@@ -1,4 +1,4 @@
-package main
+package cli
 
 import (
 	"fmt"
@@ -20,11 +20,11 @@ type fetchDoneMsg struct {
 }
 
 type installProgressModel struct {
-	bar     progress.Model
-	label   string
-	total   int
-	done    int
-	err     error
+	bar      progress.Model
+	label    string
+	total    int
+	done     int
+	err      error
 	quitting bool
 }
 

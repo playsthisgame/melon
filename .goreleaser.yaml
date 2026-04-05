@@ -25,9 +25,27 @@ builds:
       - goos: windows
         goarch: arm64
 
+  - id: melon
+    main: ./cmd/melon
+    binary: melon
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -X main.version={{ .Version }}
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+
 archives:
   - id: mln
-    builds: [mln]
+    builds: [mln, melon]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     format_overrides:
       - goos: windows

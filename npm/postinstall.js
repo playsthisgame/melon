@@ -26,8 +26,10 @@ const ext = process.platform === 'win32' ? 'zip' : 'tar.gz'
 const archiveName = `mln_${version}_${goos}_${goarch}.${ext}`
 const downloadURL = `https://github.com/playsthisgame/melon/releases/download/v${version}/${archiveName}`
 const archivePath = path.join(os.tmpdir(), archiveName)
-const binaryName = process.platform === 'win32' ? 'mln.exe' : 'mln'
-const binaryDest = path.join(__dirname, binaryName)
+
+const binaries = process.platform === 'win32'
+  ? [{ name: 'mln.exe', dest: path.join(__dirname, 'mln.exe') }, { name: 'melon.exe', dest: path.join(__dirname, 'melon.exe') }]
+  : [{ name: 'mln', dest: path.join(__dirname, 'mln') }, { name: 'melon', dest: path.join(__dirname, 'melon') }]
 
 function download(url, dest, cb) {
   const file = fs.createWriteStream(dest)
@@ -61,13 +63,15 @@ download(downloadURL, archivePath, err => {
     if (process.platform === 'win32') {
       execSync(`powershell -Command "Expand-Archive -Path '${archivePath}' -DestinationPath '${os.tmpdir()}' -Force"`)
     } else {
-      execSync(`tar -xzf "${archivePath}" -C "${os.tmpdir()}" mln`)
+      const names = binaries.map(b => b.name).join(' ')
+      execSync(`tar -xzf "${archivePath}" -C "${os.tmpdir()}" ${names}`)
     }
 
-    fs.copyFileSync(path.join(os.tmpdir(), binaryName), binaryDest)
-
-    if (process.platform !== 'win32') {
-      fs.chmodSync(binaryDest, 0o755)
+    for (const binary of binaries) {
+      fs.copyFileSync(path.join(os.tmpdir(), binary.name), binary.dest)
+      if (process.platform !== 'win32') {
+        fs.chmodSync(binary.dest, 0o755)
+      }
     }
 
     fs.unlinkSync(archivePath)
