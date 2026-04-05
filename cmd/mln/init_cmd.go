@@ -193,7 +193,7 @@ func generateManifestYAML(name, description string, agentNames []string) string 
 # Edit this file to add dependencies, then run: mln install
 
 name: %s
-version: 0.1.0
+version: %s
 
 description: "%s"
 
@@ -223,5 +223,5 @@ dependencies: {}
 
 
 tags: []
-`, name, escapedDesc, toolCompatBlock)
+`, name, version, escapedDesc, toolCompatBlock)
 }

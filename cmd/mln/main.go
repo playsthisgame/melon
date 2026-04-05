@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version = "dev"
+
 var (
 	flagDir     string
 	flagVerbose bool
@@ -20,8 +22,9 @@ func main() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "mln",
-	Short: "A dependency manager for agentic markdown files",
+	Use:     "mln",
+	Short:   "A dependency manager for agentic markdown files",
+	Version: version,
 }
 
 var installCmd = &cobra.Command{
