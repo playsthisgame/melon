@@ -15,6 +15,7 @@ import (
 
 var flagYes bool
 
+
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Scaffold a new melon.yml and create the .melon/ store directory",
@@ -193,7 +194,7 @@ func generateManifestYAML(name, description string, agentNames []string) string 
 # Edit this file to add dependencies, then run: mln install
 
 name: %s
-version: 0.1.0
+version: %s
 
 description: "%s"
 
@@ -223,5 +224,5 @@ dependencies: {}
 
 
 tags: []
-`, name, escapedDesc, toolCompatBlock)
+`, name, "0.1.0", escapedDesc, toolCompatBlock)
 }

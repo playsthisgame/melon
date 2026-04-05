@@ -62,8 +62,8 @@ Edit `melon.yml` directly:
 
 ```yaml
 dependencies:
+  github.com/playsthisgame/skills/agentic-spec-dev: "^1.0.0"
   github.com/anthropics/skills/skills/skill-creator: "main"
-  github.com/alice/pdf-skill: "^1.2.0"
 ```
 
 Dependency names are GitHub paths. You can use:
@@ -82,10 +82,10 @@ mln install
 Melon resolves each dependency, fetches it via sparse git checkout, writes `melon.lock`, and places skills into your tool directories.
 
 ```
-  resolving github.com/alice/pdf-skill (^1.2.0)...
-  fetching github.com/alice/pdf-skill@1.2.0...
-  + github.com/alice/pdf-skill@1.2.0
-  linked github.com/alice/pdf-skill -> .claude/skills/pdf-skill
+  resolving github.com/playsthisgame/skills/agentic-spec-dev (^1.0.0)...
+  fetching github.com/playsthisgame/skills/agentic-spec-dev@1.0.0...
+  + github.com/playsthisgame/skills/agentic-spec-dev@1.0.0
+  linked github.com/playsthisgame/skills/agentic-spec-dev -> .claude/playsthisgame/agentic-spec-dev
 ```
 
 ## How it works
@@ -111,7 +111,7 @@ description: "My coding agent"
 
 dependencies:
   github.com/anthropics/skills/skills/skill-creator: "main"
-  github.com/alice/pdf-skill: "^1.2.0"
+  github.com/playsthisgame/skills/agentic-spec-dev: "^1.0.0"
 
 # tool_compat drives where mln install places skills.
 # Melon knows the conventions for each agent automatically:
@@ -172,9 +172,9 @@ mln install --no-place  # fetch and lock only — skip placement into agent dirs
 Add a dependency to `melon.yml` and run install. If no version is specified, the latest semver tag is resolved automatically.
 
 ```sh
-mln add github.com/alice/pdf-skill          # resolves latest tag → ^1.2.0
-mln add github.com/alice/pdf-skill@^1.0.0   # explicit constraint
-mln add github.com/alice/pdf-skill@main     # branch pin
+mln add github.com/playsthisgame/skills/agentic-spec-dev          # resolves latest tag → ^1.2.0
+mln add github.com/playsthisgame/skills/agentic-spec-dev@^1.0.0   # explicit constraint
+mln add github.com/playsthisgame/skills/agentic-spec-dev@main     # branch pin
 ```
 
 ### `mln remove`
@@ -182,7 +182,7 @@ mln add github.com/alice/pdf-skill@main     # branch pin
 Remove a dependency from `melon.yml`, unlink its agent symlinks, and delete its `.melon/` cache entry.
 
 ```sh
-mln remove github.com/alice/pdf-skill
+mln remove github.com/playsthisgame/skills/agentic-spec-dev
 ```
 
 ## Lock file
@@ -192,10 +192,10 @@ mln remove github.com/alice/pdf-skill
 ```yaml
 generated_at: "2025-03-31T12:00:00Z"
 dependencies:
-  - name: github.com/alice/pdf-skill
+  - name: github.com/playsthisgame/skills/agentic-spec-dev
     version: "1.2.0"
     git_tag: v1.2.0
-    repo_url: https://github.com/alice/pdf-skill
+    repo_url: https://github.com/playsthisgame/skills/agentic-spec-dev
     subdir: ""
     entrypoint: SKILL.md
     tree_hash: "sha256:abc123..."
