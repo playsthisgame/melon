@@ -52,9 +52,9 @@ dependencies:
 ```
 
 Dependency names are GitHub paths. You can use:
-- A full repo — `github.com/owner/repo`
-- A monorepo subdirectory — `github.com/owner/repo/path/to/skill`
-- A GitHub web URL — `github.com/owner/repo/tree/main/path/to/skill` (the `tree/<branch>/` is stripped automatically)
+- A full repo: `github.com/owner/repo`
+- A monorepo subdirectory: `github.com/owner/repo/path/to/skill`
+- A GitHub web URL: `github.com/owner/repo/tree/main/path/to/skill` (the `tree/<branch>/` is stripped automatically)
 
 Versions can be a semver constraint (`^1.2.0`, `~2.0.0`, `1.0.0`) or a branch name (`"main"`).
 
@@ -196,13 +196,13 @@ mln install --frozen
 
 ## Why melon?
 
-As AI coding assistants become more capable, teams are building and sharing libraries of skills — reusable markdown prompts that extend what your agent can do. Without a proper dependency manager, keeping these skills consistent across developers, environments, and CI becomes a manual, error-prone process.
+As AI coding assistants become more capable, teams are building and sharing libraries of skills. Without a proper dependency manager, keeping these skills consistent across developers, environments, and CI becomes a manual, error-prone process.
 
 **Melon gives you a single source of truth.** Define all the skills your project needs in one `melon.yml` file, commit it alongside your code, and every developer (and your CI pipeline) gets exactly the same set of skills with a single `mln install`.
 
-**Skills are versioned, not just copied.** Melon pins exact versions, git tags, and SHA-256 content hashes in `melon.lock`. If a skill author publishes a breaking change, your team won't silently pick it up — you'll see the diff in the lock file and upgrade intentionally. This means you can trust that the skill running in CI today is the same one that ran last week.
+**Skills are versioned, not just copied.** Melon pins exact versions, git tags, and SHA-256 content hashes in `melon.lock`. If a skill author publishes a breaking change, your team won't silently pick it up, you'll see the diff in the lock file and upgrade intentionally. This means you can trust that the skill running in CI today is the same one that ran last week.
 
-**It works naturally with CI.** Run `mln install --frozen` in your pipeline to fail fast if the lock file is out of sync with the manifest. No surprises, no drift. Because `.melon/` and the generated symlinks are committed to the repo, CI doesn't even need network access to place skills — everything is already there.
+**It works naturally with CI.** Run `mln install --frozen` in your pipeline to fail fast if the lock file is out of sync with the manifest. No surprises, no drift. Because `.melon/` and the generated symlinks are committed to the repo, CI doesn't even need network access to place skills, everything is already there.
 
 **Works across your whole team and all your tools.** List the AI tools your project uses under `tool_compat` and melon places each skill into every agent's expected directory at once. One manifest, one install command, every agent ready to go.
 
