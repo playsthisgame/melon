@@ -3,6 +3,10 @@
 /mln
 /bin/
 
+# Downloaded npm binaries (placed by postinstall)
+/npm/mln
+/npm/mln.exe
+
 # Go build/test cache
 *.test
 *.out
