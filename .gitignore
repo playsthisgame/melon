@@ -1,6 +1,6 @@
 
 # Compiled Go binaries
-mln
+/mln
 /bin/
 
 # Go build/test cache
