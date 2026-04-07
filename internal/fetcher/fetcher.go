@@ -2,6 +2,7 @@ package fetcher
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -16,6 +17,9 @@ import (
 	"github.com/playsthisgame/melon/internal/resolver"
 	"github.com/playsthisgame/melon/pkg/semver"
 )
+
+// ErrNoSemverTags is returned by LatestTag when a repository has no semver tags.
+var ErrNoSemverTags = errors.New("no semver tags found")
 
 // FetchResult contains the computed tree hash and file list produced by Fetch.
 type FetchResult struct {
@@ -83,7 +87,7 @@ func LatestTag(repoURL string) (version, gitTag string, err error) {
 	}
 
 	if len(candidates) == 0 {
-		return "", "", fmt.Errorf("fetcher: no semver tags found in %s", repoURL)
+		return "", "", fmt.Errorf("fetcher: %w in %s", ErrNoSemverTags, repoURL)
 	}
 
 	sort.Slice(candidates, func(i, j int) bool {
