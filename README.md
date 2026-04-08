@@ -46,7 +46,7 @@ npm install -g @playsthisgame/melon
 **🐹 Go**
 
 ```sh
-go install github.com/playsthisgame/melon/cmd/mln@latest
+go install github.com/playsthisgame/melon/cmd/melon@latest
 ```
 
 Requires Git to be available on your `PATH`.
@@ -56,7 +56,7 @@ Requires Git to be available on your `PATH`.
 **1. Initialize a project**
 
 ```sh
-mln init
+melon init
 ```
 
 This creates a `melon.yml` manifest and the `.melon/` cache directory. You'll be prompted for a package name, type, and which AI tools you use.
@@ -81,7 +81,7 @@ Versions can be a semver constraint (`^1.2.0`, `~2.0.0`, `1.0.0`) or a branch na
 **3. Install**
 
 ```sh
-mln install
+melon install
 ```
 
 Melon resolves each dependency, fetches it via sparse git checkout, writes `melon.lock`, and places skills into your tool directories.
@@ -99,7 +99,7 @@ Melon resolves each dependency, fetches it via sparse git checkout, writes `melo
 melon.yml          — declares your dependencies and target AI tools    ← commit
 melon.lock         — pins exact versions, git tags, and content hashes ← commit
 .melon/            — local cache; one directory per dep@version        ← commit
-.claude/skills/    — symlinks into .melon/ created by mln install      ← commit
+.claude/skills/    — symlinks into .melon/ created by melon install      ← commit
 ```
 
 Skills are fetched once into `.melon/` and symlinked into the configured tools directories.
@@ -118,7 +118,7 @@ dependencies:
   github.com/anthropics/skills/skills/skill-creator: "main"
   github.com/playsthisgame/skills/agentic-spec-dev: "^1.0.0"
 
-# tool_compat drives where mln install places skills.
+# tool_compat drives where melon install places skills.
 # Melon knows the conventions for each agent automatically:
 #   claude-code    -> .claude/skills/
 #   cursor         -> .agents/skills/
@@ -152,67 +152,67 @@ tags: []
 
 ## Commands
 
-### `mln init`
+### `melon init`
 
 Scaffold a new `melon.yml` and create the `.melon/` store directory.
 
 ```sh
-mln init
-mln init --yes        # accept all defaults (for scripting)
-mln init --dir ./app  # initialize in a different directory
+melon init
+melon init --yes        # accept all defaults (for scripting)
+melon init --dir ./app  # initialize in a different directory
 ```
 
-### `mln install`
+### `melon install`
 
 Resolve dependencies, fetch them into `.melon/`, write `melon.lock`, and symlink skills into tool directories.
 
 ```sh
-mln install
-mln install --frozen    # fail if melon.lock would change (useful in CI)
-mln install --no-place  # fetch and lock only — skip placement into agent dirs
+melon install
+melon install --frozen    # fail if melon.lock would change (useful in CI)
+melon install --no-place  # fetch and lock only — skip placement into agent dirs
 ```
 
-### `mln add`
+### `melon add`
 
 Add a dependency to `melon.yml` and run install. If no version is specified, the latest semver tag is resolved automatically.
 
 ```sh
-mln add github.com/playsthisgame/skills/agentic-spec-dev          # resolves latest tag → ^1.2.0
-mln add github.com/playsthisgame/skills/agentic-spec-dev@^1.0.0   # explicit constraint
-mln add github.com/playsthisgame/skills/agentic-spec-dev@main     # branch pin
+melon add github.com/playsthisgame/skills/agentic-spec-dev          # resolves latest tag → ^1.2.0
+melon add github.com/playsthisgame/skills/agentic-spec-dev@^1.0.0   # explicit constraint
+melon add github.com/playsthisgame/skills/agentic-spec-dev@main     # branch pin
 ```
 
-### `mln remove`
+### `melon remove`
 
 Remove a dependency from `melon.yml`, unlink its agent symlinks, and delete its `.melon/` cache entry.
 
 ```sh
-mln remove github.com/playsthisgame/skills/agentic-spec-dev
+melon remove github.com/playsthisgame/skills/agentic-spec-dev
 ```
 
-### `mln search`
+### `melon search`
 
-Search for skills by keyword against the [melon-index](https://github.com/playsthisgame/melon-index) curated list. In a terminal, results are shown in an interactive list — navigate with `↑↓`, press `Enter` to select, and melon will offer to run `mln add` for you.
+Search for skills by keyword against the [melon-index](https://github.com/playsthisgame/melon-index) curated list. In a terminal, results are shown in an interactive list — navigate with `↑↓`, press `Enter` to select, and melon will offer to run `melon add` for you.
 
 ```sh
-mln search spec          # find spec-related skills
-mln search git workflow  # find git workflow skills
+melon search spec          # find spec-related skills
+melon search git workflow  # find git workflow skills
 ```
 
 Featured skills appear at the top of results. If nothing matches, melon will tell you and suggest submitting to the index.
 
-### `mln info`
+### `melon info`
 
 Show metadata for a specific skill — description, author, and available versions — before installing it.
 
 ```sh
-mln info github.com/playsthisgame/skills/agentic-spec-dev
-mln info github.com/owner/repo/path/to/skill
+melon info github.com/playsthisgame/skills/agentic-spec-dev
+melon info github.com/owner/repo/path/to/skill
 ```
 
 ## Lock file
 
-`melon.lock` is generated by `mln install` and should be committed to version control. It pins the exact version, git tag, repo URL, subdirectory, and a SHA-256 tree hash for each dependency.
+`melon.lock` is generated by `melon install` and should be committed to version control. It pins the exact version, git tag, repo URL, subdirectory, and a SHA-256 tree hash for each dependency.
 
 ```yaml
 generated_at: "2025-03-31T12:00:00Z"
@@ -231,18 +231,18 @@ dependencies:
 Use `--frozen` in CI to ensure the lock file is always up to date:
 
 ```sh
-mln install --frozen
+melon install --frozen
 ```
 
 ## Why melon?
 
 As AI coding assistants become more capable, teams are building and sharing libraries of skills. Without a proper dependency manager, keeping these skills consistent across developers, environments, and CI becomes a manual, error-prone process.
 
-**Melon gives you a single source of truth.** Define all the skills your project needs in one `melon.yml` file, commit it alongside your code, and every developer (and your CI pipeline) gets exactly the same set of skills with a single `mln install`.
+**Melon gives you a single source of truth.** Define all the skills your project needs in one `melon.yml` file, commit it alongside your code, and every developer (and your CI pipeline) gets exactly the same set of skills with a single `melon install`.
 
 **Skills are versioned, not just copied.** Melon pins exact versions, git tags, and SHA-256 content hashes in `melon.lock`. If a skill author publishes a breaking change, your team won't silently pick it up, you'll see the diff in the lock file and upgrade intentionally. This means you can trust that the skill running in CI today is the same one that ran last week.
 
-**It works naturally with CI.** Run `mln install --frozen` in your pipeline to fail fast if the lock file is out of sync with the manifest. No surprises, no drift. Because `.melon/` and the generated symlinks are committed to the repo, CI doesn't even need network access to place skills, everything is already there.
+**It works naturally with CI.** Run `melon install --frozen` in your pipeline to fail fast if the lock file is out of sync with the manifest. No surprises, no drift. Because `.melon/` and the generated symlinks are committed to the repo, CI doesn't even need network access to place skills, everything is already there.
 
 **Works across your whole team and all your tools.** List the AI tools your project uses under `tool_compat` and melon places each skill into every agent's expected directory at once. One manifest, one install command, every agent ready to go.
 
@@ -257,7 +257,7 @@ Many agent skill collections ship a one-liner like `npx install-skill <name>` th
 | **Multiple agents** | `tool_compat` places skills for all your tools at once | Typically one target agent |
 | **Offline / CI** | Already-fetched deps are cached in `.melon/` | Always fetches from the network |
 | **Node.js required** | No — pure Go binary, no runtime needed | Yes |
-| **Removal** | `mln remove` unlinks symlinks and purges the cache | Usually manual |
+| **Removal** | `melon remove` unlinks symlinks and purges the cache | Usually manual |
 
 ## License
 
