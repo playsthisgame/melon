@@ -3,7 +3,6 @@ package cli
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/playsthisgame/melon/internal/fetcher"
@@ -48,7 +47,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	manifestPath := filepath.Join(dir, "melon.yml")
+	manifestPath := manifest.FindPath(dir)
 
 	m, err := manifest.Load(manifestPath)
 	if err != nil {
@@ -65,10 +64,10 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	m.Dependencies[name] = constraint
 
 	if err := manifest.Save(m, manifestPath); err != nil {
-		return fmt.Errorf("add: save melon.yml: %w", err)
+		return fmt.Errorf("add: save melon.yaml: %w", err)
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "Added %s %s to melon.yml\n", name, constraint)
+	fmt.Fprintf(cmd.OutOrStdout(), "Added %s %s to melon.yaml\n", name, constraint)
 
 	// Run the full install pipeline (resolve → fetch → lock → place).
 	return runInstall(cmd, args)

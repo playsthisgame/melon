@@ -20,14 +20,14 @@ var installCmd = &cobra.Command{
 
 var addCmd = &cobra.Command{
 	Use:   "add <github-path>[@<constraint>]",
-	Short: "Add a new dependency to melon.yml and run install",
+	Short: "Add a new dependency to melon.yaml and run install",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runAdd,
 }
 
 var removeCmd = &cobra.Command{
 	Use:   "remove <name>",
-	Short: "Remove a dependency from melon.yml and update .melon/ and melon.lock",
+	Short: "Remove a dependency from melon.yaml and update .melon/ and melon.lock",
 	Args:  cobra.ExactArgs(1),
 	RunE:  runRemove,
 }

@@ -59,11 +59,11 @@ Requires Git to be available on your `PATH`.
 melon init
 ```
 
-This creates a `melon.yml` manifest and the `.melon/` cache directory. You'll be prompted for a package name, type, and which AI tools you use.
+This creates a `melon.yaml` manifest and the `.melon/` cache directory. You'll be prompted for a package name, type, and which AI tools you use.
 
 **2. Add a dependency**
 
-Edit `melon.yml` directly:
+Edit `melon.yaml` directly:
 
 ```yaml
 dependencies:
@@ -96,7 +96,7 @@ Melon resolves each dependency, fetches it via sparse git checkout, writes `melo
 ## How it works
 
 ```
-melon.yml          — declares your dependencies and target AI tools    ← commit
+melon.yaml          — declares your dependencies and target AI tools    ← commit
 melon.lock         — pins exact versions, git tags, and content hashes ← commit
 .melon/            — local cache; one directory per dep@version        ← commit
 .claude/skills/    — symlinks into .melon/ created by melon install      ← commit
@@ -107,7 +107,7 @@ Skills are fetched once into `.melon/` and symlinked into the configured tools d
 ## Manifest Reference
 
 ```yaml
-# melon.yml
+# melon.yaml
 
 name: my-agent
 version: 0.1.0
@@ -154,7 +154,7 @@ tags: []
 
 ### `melon init`
 
-Scaffold a new `melon.yml` and create the `.melon/` store directory.
+Scaffold a new `melon.yaml` and create the `.melon/` store directory.
 
 ```sh
 melon init
@@ -174,7 +174,7 @@ melon install --no-place  # fetch and lock only — skip placement into agent di
 
 ### `melon add`
 
-Add a dependency to `melon.yml` and run install. If no version is specified, the latest semver tag is resolved automatically.
+Add a dependency to `melon.yaml` and run install. If no version is specified, the latest semver tag is resolved automatically.
 
 ```sh
 melon add github.com/playsthisgame/skills/agentic-spec-dev          # resolves latest tag → ^1.2.0
@@ -184,7 +184,7 @@ melon add github.com/playsthisgame/skills/agentic-spec-dev@main     # branch pin
 
 ### `melon remove`
 
-Remove a dependency from `melon.yml`, unlink its agent symlinks, and delete its `.melon/` cache entry.
+Remove a dependency from `melon.yaml`, unlink its agent symlinks, and delete its `.melon/` cache entry.
 
 ```sh
 melon remove github.com/playsthisgame/skills/agentic-spec-dev
@@ -238,7 +238,7 @@ melon install --frozen
 
 As AI coding assistants become more capable, teams are building and sharing libraries of skills. Without a proper dependency manager, keeping these skills consistent across developers, environments, and CI becomes a manual, error-prone process.
 
-**Melon gives you a single source of truth.** Define all the skills your project needs in one `melon.yml` file, commit it alongside your code, and every developer (and your CI pipeline) gets exactly the same set of skills with a single `melon install`.
+**Melon gives you a single source of truth.** Define all the skills your project needs in one `melon.yaml` file, commit it alongside your code, and every developer (and your CI pipeline) gets exactly the same set of skills with a single `melon install`.
 
 **Skills are versioned, not just copied.** Melon pins exact versions, git tags, and SHA-256 content hashes in `melon.lock`. If a skill author publishes a breaking change, your team won't silently pick it up, you'll see the diff in the lock file and upgrade intentionally. This means you can trust that the skill running in CI today is the same one that ran last week.
 

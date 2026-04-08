@@ -24,7 +24,7 @@ func staticVersionResolver(table map[string]string) func(string, string) (string
 }
 
 // staticManifestFetcher returns predetermined manifests keyed by "repoURL|gitTag".
-// Returns an empty manifest for unknown keys (simulates no mln.yaml).
+// Returns an empty manifest for unknown keys (simulates no melon.yaml).
 func staticManifestFetcher(table map[string]manifest.Manifest) func(string, string, string) (manifest.Manifest, error) {
 	return func(repoURL, gitTag, subdir string) (manifest.Manifest, error) {
 		key := repoURL + "|" + gitTag
@@ -163,7 +163,7 @@ func TestResolve_VersionConflict(t *testing.T) {
 }
 
 func TestResolve_MissingRemoteManifest(t *testing.T) {
-	// A dep with no remote mln.yaml is treated as having no transitive deps.
+	// A dep with no remote melon.yaml is treated as having no transitive deps.
 	m := manifest.Manifest{
 		Dependencies: map[string]string{
 			"github.com/alice/no-manifest-skill": "^1.0.0",
@@ -177,7 +177,7 @@ func TestResolve_MissingRemoteManifest(t *testing.T) {
 	fetchManifest := staticManifestFetcher(nil)
 
 	deps, err := Resolve(m, resolveVersion, fetchManifest)
-	require.NoError(t, err, "missing remote mln.yaml must not cause an error")
+	require.NoError(t, err, "missing remote melon.yaml must not cause an error")
 	require.Len(t, deps, 1)
 	assert.Equal(t, "github.com/alice/no-manifest-skill", deps[0].Name)
 }
@@ -214,7 +214,7 @@ func TestResolve_Deterministic(t *testing.T) {
 }
 
 func TestResolve_EntrypointFromManifest(t *testing.T) {
-	// If a dep's mln.yaml specifies a custom entrypoint, it must be used.
+	// If a dep's melon.yaml specifies a custom entrypoint, it must be used.
 	m := manifest.Manifest{
 		Dependencies: map[string]string{
 			"github.com/alice/custom-skill": "^1.0.0",

@@ -7,8 +7,8 @@ import "io"
 //   - the directive key in conflict
 //   - which packages define it
 //   - each package's conflicting value
-//   - a suggested resolution: remove one conflicting dep from mln.yaml,
-//     or add a manual override directive in the mln.yaml outputs block.
+//   - a suggested resolution: remove one conflicting dep from melon.yaml,
+//     or add a manual override directive in the melon.yaml outputs block.
 //
 // Uses github.com/fatih/color for colored output.
 // The caller is responsible for exiting non-zero after calling Print.

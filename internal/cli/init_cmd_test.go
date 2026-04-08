@@ -27,25 +27,25 @@ func TestInitYes_CreatesValidManifestAndStoreDir(t *testing.T) {
 	err := runInit(initCmd, nil)
 	require.NoError(t, err)
 
-	manifestPath := filepath.Join(dir, "melon.yml")
+	manifestPath := filepath.Join(dir, "melon.yaml")
 	mlnDir := filepath.Join(dir, ".melon")
 
-	// melon.yml must exist and parse without error.
+	// melon.yaml must exist and parse without error.
 	_, statErr := os.Stat(manifestPath)
-	require.NoError(t, statErr, "melon.yml should exist")
+	require.NoError(t, statErr, "melon.yaml should exist")
 
 	m, loadErr := manifest.Load(manifestPath)
-	require.NoError(t, loadErr, "manifest.Load should parse the generated melon.yml")
+	require.NoError(t, loadErr, "manifest.Load should parse the generated melon.yaml")
 
 	// Basic fields from defaults.
 	assert.Equal(t, filepath.Base(dir), m.Name)
 	assert.Equal(t, "0.1.0", m.Version)
 
-	// tool_compat defaults to ["claude-code"].
-	assert.Equal(t, []string{"claude-code"}, m.ToolCompat)
+	// tool_compat defaults to empty — placement falls back to .agents/skills/.
+	assert.Empty(t, m.ToolCompat)
 
 	// outputs must be absent — paths are derived from tool_compat automatically.
-	assert.Nil(t, m.Outputs, "outputs should not be set in generated melon.yml")
+	assert.Nil(t, m.Outputs, "outputs should not be set in generated melon.yaml")
 
 	// .melon/ directory must exist.
 	info, statErr := os.Stat(mlnDir)
@@ -70,8 +70,8 @@ func TestInitYes_NoOverwriteCheck(t *testing.T) {
 	// Second init with --yes should overwrite without error.
 	require.NoError(t, runInit(initCmd, nil))
 
-	_, err := manifest.Load(filepath.Join(dir, "melon.yml"))
-	assert.NoError(t, err, "melon.yml should still be valid after second init --yes")
+	_, err := manifest.Load(filepath.Join(dir, "melon.yaml"))
+	assert.NoError(t, err, "melon.yaml should still be valid after second init --yes")
 }
 
 func TestGenerateManifestYAML_ParsesCleanly(t *testing.T) {
@@ -92,7 +92,7 @@ func TestGenerateManifestYAML_ParsesCleanly(t *testing.T) {
 			yaml := generateManifestYAML(tc.name, tc.desc, tc.agentNames)
 
 			dir := t.TempDir()
-			path := filepath.Join(dir, "melon.yml")
+			path := filepath.Join(dir, "melon.yaml")
 			require.NoError(t, os.WriteFile(path, []byte(yaml), 0644))
 
 			m, err := manifest.Load(path)

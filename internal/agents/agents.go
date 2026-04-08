@@ -46,7 +46,7 @@ func KnownAgents() []string {
 
 // DeriveOutputs maps each agent in agentCompat to its project-scoped skills
 // directory. Returns a map of target path (relative to project root) -> dep name
-// glob ("*"), suitable for use as the outputs block in mln.yaml.
+// glob ("*"), suitable for use as the outputs block in melon.yaml.
 //
 // Returns ErrUnknownAgent (wrapped) if any value in agentCompat is not in the
 // convention table.

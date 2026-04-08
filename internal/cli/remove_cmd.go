@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/playsthisgame/melon/internal/manifest"
 	"github.com/spf13/cobra"
@@ -15,7 +14,7 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	manifestPath := filepath.Join(dir, "melon.yml")
+	manifestPath := manifest.FindPath(dir)
 
 	m, err := manifest.Load(manifestPath)
 	if err != nil {
@@ -23,16 +22,16 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	}
 
 	if _, ok := m.Dependencies[name]; !ok {
-		return fmt.Errorf("remove: %q is not a dependency in melon.yml", name)
+		return fmt.Errorf("remove: %q is not a dependency in melon.yaml", name)
 	}
 
 	delete(m.Dependencies, name)
 
 	if err := manifest.Save(m, manifestPath); err != nil {
-		return fmt.Errorf("remove: save melon.yml: %w", err)
+		return fmt.Errorf("remove: save melon.yaml: %w", err)
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "Removed %s from melon.yml\n", name)
+	fmt.Fprintf(cmd.OutOrStdout(), "Removed %s from melon.yaml\n", name)
 
 	// Run the full install pipeline — this regenerates melon.lock and prunes
 	// the removed dep's agent symlink and .melon/ cache entry.

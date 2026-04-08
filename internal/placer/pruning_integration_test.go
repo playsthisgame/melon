@@ -20,11 +20,11 @@ import (
 )
 
 // TestPruning_InstallRemovesDep simulates the pruning step that install runs
-// after a dep is removed from melon.yml.
+// after a dep is removed from melon.yaml.
 //
 // Setup:
 //   - Two deps placed and cached: alice/pdf-skill and bob/base-utils
-//   - bob/base-utils is removed from the manifest (simulates user editing melon.yml)
+//   - bob/base-utils is removed from the manifest (simulates user editing melon.yaml)
 //
 // Expectation:
 //   - bob/base-utils symlink and cache entry are gone
