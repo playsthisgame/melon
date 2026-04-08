@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	gh "github.com/playsthisgame/melon/internal/github"
 	"github.com/playsthisgame/melon/internal/index"
 	"github.com/spf13/cobra"
 )
@@ -37,40 +36,41 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// 2. Fall back to GitHub Topics if the index missed or was unreachable.
-	fromTopics := false
+	// TODO: Fall back to GitHub Topics when the community grows. Disabled for now
+	// because topic search returns repos rather than skill subdirectories — a
+	// multi-skill repo like melon-index would surface as the repo root instead of
+	// its individual skills. Revisit once a skill-manifest convention is in place.
+	//
+	// if len(items) == 0 {
+	// 	if indexErr != nil {
+	// 		fmt.Fprintf(cmd.OutOrStdout(), "warning: could not load curated index (%v)\n", indexErr)
+	// 		fmt.Fprintf(cmd.OutOrStdout(), "         (expected: %s)\n", index.IndexURL)
+	// 	}
+	// 	client := gh.New()
+	// 	results, ghErr := client.SearchByTopic(term)
+	// 	if ghErr != nil {
+	// 		if indexErr != nil {
+	// 			return fmt.Errorf("search: index unavailable (%v) and GitHub Topics failed: %w", indexErr, ghErr)
+	// 		}
+	// 		return fmt.Errorf("search: %w", ghErr)
+	// 	}
+	// 	for _, r := range results {
+	// 		items = append(items, searchResultItem{
+	// 			path:        r.Name,
+	// 			author:      r.Owner,
+	// 			description: r.Description,
+	// 		})
+	// 	}
+	// }
+
+	// 2. No results from the curated index.
 	if len(items) == 0 {
 		if indexErr != nil {
 			fmt.Fprintf(cmd.OutOrStdout(), "warning: could not load curated index (%v)\n", indexErr)
 			fmt.Fprintf(cmd.OutOrStdout(), "         (expected: %s)\n", index.IndexURL)
 		}
-		client := gh.New()
-		results, ghErr := client.SearchByTopic(term)
-		if ghErr != nil {
-			if indexErr != nil {
-				// Both sources failed — report both errors.
-				return fmt.Errorf("search: index unavailable (%v) and GitHub Topics failed: %w", indexErr, ghErr)
-			}
-			return fmt.Errorf("search: %w", ghErr)
-		}
-		for _, r := range results {
-			items = append(items, searchResultItem{
-				path:        r.Name,
-				author:      r.Owner,
-				description: r.Description,
-			})
-		}
-		fromTopics = true
-	}
-
-	// 3. No results from either source.
-	if len(items) == 0 {
 		fmt.Fprintf(cmd.OutOrStdout(), "No skills found for %q.\n", term)
 		return nil
-	}
-
-	if fromTopics {
-		fmt.Fprintln(cmd.OutOrStdout(), "No curated results — showing community-tagged skills from GitHub Topics:")
 	}
 
 	// 4a. Interactive TTY mode — show the bubbletea list.
