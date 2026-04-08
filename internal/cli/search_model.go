@@ -19,17 +19,19 @@ type searchResultItem struct {
 
 func (s searchResultItem) FilterValue() string { return s.path }
 
-// searchDelegate renders each search result as two lines:
+// searchMultiSelectDelegate renders each search result as two lines with a checkbox:
 //
-//	> ★ github.com/owner/repo  (author)
-//	    description text
-type searchDelegate struct{}
+//	> [✓] ★ github.com/owner/repo  (author)
+//	       description text
+type searchMultiSelectDelegate struct {
+	selected map[int]bool
+}
 
-func (d searchDelegate) Height() int                              { return 2 }
-func (d searchDelegate) Spacing() int                             { return 0 }
-func (d searchDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
+func (d searchMultiSelectDelegate) Height() int                              { return 2 }
+func (d searchMultiSelectDelegate) Spacing() int                             { return 0 }
+func (d searchMultiSelectDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 
-func (d searchDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
+func (d searchMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
 	r := item.(searchResultItem)
 
 	cursor := "  "
@@ -37,12 +39,17 @@ func (d searchDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 		cursor = "> "
 	}
 
+	check := "[ ] "
+	if d.selected[index] {
+		check = "[✓] "
+	}
+
 	star := "  "
 	if r.featured {
 		star = "★ "
 	}
 
-	nameLine := cursor + star + r.path
+	nameLine := cursor + check + star + r.path
 	if r.author != "" {
 		nameLine += "  (" + r.author + ")"
 	}
@@ -51,10 +58,13 @@ func (d searchDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 	if desc == "" {
 		desc = "(no description)"
 	}
-	descLine := "      " + desc
+	descLine := "           " + desc
 
-	if index == m.Index() {
+	if d.selected[index] {
 		fmt.Fprintln(w, selectedItem.Render(nameLine))
+		fmt.Fprintln(w, hintStyle.Render(descLine))
+	} else if index == m.Index() {
+		fmt.Fprintln(w, normalItem.Render(nameLine))
 		fmt.Fprintln(w, hintStyle.Render(descLine))
 	} else {
 		fmt.Fprintln(w, dimItem.Render(nameLine))
@@ -65,7 +75,8 @@ func (d searchDelegate) Render(w io.Writer, m list.Model, index int, item list.I
 // searchModel is a bubbletea model for the interactive search results list.
 type searchModel struct {
 	list     list.Model
-	selected string
+	sel      map[int]bool
+	selected []string
 	quitting bool
 }
 
@@ -81,13 +92,14 @@ func newSearchModel(results []searchResultItem) searchModel {
 		height = 20
 	}
 
-	l := list.New(items, searchDelegate{}, 80, height)
+	sel := map[int]bool{}
+	l := list.New(items, searchMultiSelectDelegate{selected: sel}, 80, height)
 	l.SetShowTitle(false)
 	l.SetShowStatusBar(false)
 	l.SetFilteringEnabled(false)
 	l.SetShowHelp(false)
 
-	return searchModel{list: l}
+	return searchModel{list: l, sel: sel}
 }
 
 func (m searchModel) Init() tea.Cmd { return nil }
@@ -99,9 +111,17 @@ func (m searchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			m.quitting = true
 			return m, tea.Quit
+		case tea.KeySpace:
+			idx := m.list.Index()
+			m.sel[idx] = !m.sel[idx]
+			m.list.SetDelegate(searchMultiSelectDelegate{selected: m.sel})
+			return m, nil
 		case tea.KeyEnter:
-			if item, ok := m.list.SelectedItem().(searchResultItem); ok {
-				m.selected = item.path
+			items := m.list.Items()
+			for i, item := range items {
+				if m.sel[i] {
+					m.selected = append(m.selected, item.(searchResultItem).path)
+				}
 			}
 			m.quitting = true
 			return m, tea.Quit
@@ -119,6 +139,6 @@ func (m searchModel) View() string {
 	var b strings.Builder
 	b.WriteString(titleStyle.Render("Search results") + "\n")
 	b.WriteString(m.list.View() + "\n")
-	b.WriteString(hintStyle.Render("↑↓ navigate  enter to select  esc to cancel") + "\n")
+	b.WriteString(hintStyle.Render("↑↓ navigate  space to toggle  enter to install  esc to cancel") + "\n")
 	return b.String()
 }

@@ -79,10 +79,10 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("search: %w", err)
 		}
-		if selected == "" {
-			return nil // user cancelled
+		if len(selected) == 0 {
+			return nil // user cancelled or made no selection
 		}
-		return offerAdd(cmd, selected)
+		return offerAddMany(cmd, selected)
 	}
 
 	// 4b. Plain-text non-TTY mode.
@@ -96,28 +96,37 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// runSearchTUI runs the bubbletea search list and returns the selected path.
-func runSearchTUI(items []searchResultItem) (string, error) {
+// runSearchTUI runs the bubbletea search list and returns the selected paths.
+func runSearchTUI(items []searchResultItem) ([]string, error) {
 	m := newSearchModel(items)
 	p := tea.NewProgram(m)
 	final, err := p.Run()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	return final.(searchModel).selected, nil
 }
 
-// offerAdd prints the mln add command for the selected path and prompts to run it.
-func offerAdd(cmd *cobra.Command, path string) error {
-	fmt.Fprintf(cmd.OutOrStdout(), "\nSelected: %s\n", path)
-	fmt.Fprintf(cmd.OutOrStdout(), "Run 'mln add %s'? [y/N]: ", path)
+// offerAddMany prints the selected skills and prompts the user to install them all.
+func offerAddMany(cmd *cobra.Command, paths []string) error {
+	fmt.Fprintf(cmd.OutOrStdout(), "\nSelected skills:\n")
+	for _, p := range paths {
+		fmt.Fprintf(cmd.OutOrStdout(), "  - %s\n", p)
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "Install %d skill(s)? [y/N]: ", len(paths))
 
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')
 	input = strings.TrimSpace(strings.ToLower(input))
 
-	if input == "y" || input == "yes" {
-		return runAdd(cmd, []string{path})
+	if input != "y" && input != "yes" {
+		return nil
+	}
+
+	for _, p := range paths {
+		if err := runAdd(cmd, []string{p}); err != nil {
+			fmt.Fprintf(cmd.OutOrStdout(), "error installing %s: %v\n", p, err)
+		}
 	}
 	return nil
 }
