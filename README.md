@@ -31,6 +31,10 @@
 
 Melon manages markdown-based packages that AI coding assistants read as context. It resolves dependencies from GitHub, fetches them into a local cache, and places them into your agent's expected directory (e.g. `.claude/skills/`) so they are available immediately.
 
+## See it in action
+
+![melon demo](https://raw.githubusercontent.com/playsthisgame/melon/main/assets/demo.gif)
+
 ## Installation
 
 **📦 Global install**
