@@ -3,11 +3,28 @@ package manifest
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
 
-// Load reads and parses a melon.yml file at the given path.
+// FindPath returns the path to the manifest file in dir. It prefers
+// melon.yaml but falls back to melon.yml for backwards compatibility.
+// When neither file exists it returns the canonical melon.yaml path so
+// callers receive a clear "file not found" error on Load.
+func FindPath(dir string) string {
+	yaml := filepath.Join(dir, "melon.yaml")
+	if _, err := os.Stat(yaml); err == nil {
+		return yaml
+	}
+	yml := filepath.Join(dir, "melon.yml")
+	if _, err := os.Stat(yml); err == nil {
+		return yml
+	}
+	return yaml
+}
+
+// Load reads and parses a melon.yaml file at the given path.
 func Load(path string) (Manifest, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

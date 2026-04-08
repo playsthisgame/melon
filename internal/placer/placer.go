@@ -75,8 +75,7 @@ func Place(deps []resolver.ResolvedDep, m manifest.Manifest, projectDir string, 
 	}
 
 	if len(targetBases) == 0 {
-		fmt.Fprintln(out, "placer: no target tool directories — set tool_compat in melon.yml")
-		return nil
+		targetBases = []string{".agents/skills/"}
 	}
 
 	for _, dep := range deps {

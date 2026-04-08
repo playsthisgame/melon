@@ -35,7 +35,7 @@ type ResolvedDep struct {
 // resolveVersion is called to convert a (repoURL, constraint) pair into a
 // pinned (version, gitTag). Typically set to fetcher.LatestMatchingVersion.
 //
-// fetchManifest fetches the mln.yaml for a dep from its source. It should
+// fetchManifest fetches the melon.yaml for a dep from its source. It should
 // return an empty Manifest and nil error when the file is absent (404).
 // Typically set to DefaultFetchManifest.
 //
@@ -147,7 +147,7 @@ func Resolve(
 	return result, nil
 }
 
-// DefaultFetchManifest fetches a dependency's mln.yaml from the GitHub raw
+// DefaultFetchManifest fetches a dependency's melon.yaml from the GitHub raw
 // content API. Returns an empty Manifest and nil error when the file is absent
 // (HTTP 404) — missing manifests are treated as deps with no transitive deps.
 // Respects the GITHUB_TOKEN environment variable if set.
@@ -158,7 +158,7 @@ func DefaultFetchManifest(repoURL, gitTag, subdir string) (manifest.Manifest, er
 	if subdir != "" {
 		rawURL += "/" + subdir
 	}
-	rawURL += "/mln.yaml"
+	rawURL += "/melon.yaml"
 
 	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
 	if err != nil {

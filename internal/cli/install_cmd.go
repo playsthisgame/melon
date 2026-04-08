@@ -29,7 +29,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	manifestPath := filepath.Join(dir, "melon.yml")
+	manifestPath := manifest.FindPath(dir)
 	lockPath := filepath.Join(dir, "melon.lock")
 
 	m, err := manifest.Load(manifestPath)
@@ -42,7 +42,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 	oldLock, _ = lockfile.Load(lockPath)
 
 	if len(m.Dependencies) == 0 {
-		fmt.Fprintln(cmd.OutOrStdout(), "No dependencies declared in melon.yml.")
+		fmt.Fprintln(cmd.OutOrStdout(), "No dependencies declared in melon.yaml.")
 		// Prune any deps that were in the previous lock.
 		if len(oldLock.Dependencies) > 0 {
 			if !flagNoPlace {

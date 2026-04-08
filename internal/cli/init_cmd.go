@@ -10,6 +10,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/playsthisgame/melon/internal/agents"
+	"github.com/playsthisgame/melon/internal/manifest"
 	"github.com/spf13/cobra"
 )
 
@@ -17,8 +18,8 @@ var flagYes bool
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Scaffold a new melon.yml and create the .melon/ store directory",
-	Long: `Interactively create a melon.yml in the current directory and initialize
+	Short: "Scaffold a new melon.yaml and create the .melon/ store directory",
+	Long: `Interactively create a melon.yaml in the current directory and initialize
 the .melon/ package store. Does not run install.
 
 Use --yes to accept all defaults without prompts (useful for scripting).`,
@@ -35,15 +36,15 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	manifestPath := filepath.Join(dir, "melon.yml")
+	manifestPath := manifest.FindPath(dir)
 	mlnDir := filepath.Join(dir, ".melon")
 
 	// Overwrite protection.
 	if _, err := os.Stat(manifestPath); err == nil {
 		if flagYes {
-			fmt.Fprintf(cmd.OutOrStdout(), "melon.yml already exists — overwriting (--yes)\n")
+			fmt.Fprintf(cmd.OutOrStdout(), "melon.yaml already exists — overwriting (--yes)\n")
 		} else {
-			fmt.Fprintf(cmd.OutOrStdout(), "melon.yml already exists. Overwrite? [y/N] ")
+			fmt.Fprintf(cmd.OutOrStdout(), "melon.yaml already exists. Overwrite? [y/N] ")
 			answer := readLine(cmd.InOrStdin())
 			if !strings.EqualFold(strings.TrimSpace(answer), "y") {
 				fmt.Fprintln(cmd.OutOrStdout(), "Aborted.")
@@ -60,7 +61,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	if flagYes || !isTTY() {
 		name = prompt(cmd, "Project name?", defaultName)
 		description = prompt(cmd, "Short description?", "")
-		agentNames = promptMultiChoice(cmd, "AI tools?", agents.KnownAgents(), []string{"claude-code"})
+		agentNames = promptMultiChoice(cmd, "AI tools?", agents.KnownAgents(), []string{})
 	} else {
 		model := newInitModel(defaultName)
 		p := tea.NewProgram(model)
@@ -78,10 +79,10 @@ func runInit(cmd *cobra.Command, args []string) error {
 		agentNames = result.agentNames
 	}
 
-	// Write melon.yml with inline comments.
+	// Write melon.yaml with inline comments.
 	content := generateManifestYAML(name, description, agentNames)
 	if err := os.WriteFile(manifestPath, []byte(content), 0644); err != nil {
-		return fmt.Errorf("init: write melon.yml: %w", err)
+		return fmt.Errorf("init: write melon.yaml: %w", err)
 	}
 
 	// Create .melon/ store directory.
@@ -89,7 +90,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("init: create .melon/: %w", err)
 	}
 
-	fmt.Fprintln(cmd.OutOrStdout(), "melon.yml created. Add dependencies with: mln add <dep>")
+	fmt.Fprintln(cmd.OutOrStdout(), "melon.yaml created. Add dependencies with: mln add <dep>")
 	return nil
 }
 
@@ -170,7 +171,7 @@ func readLine(r io.Reader) string {
 	return ""
 }
 
-// generateManifestYAML produces a fully commented melon.yml string.
+// generateManifestYAML produces a fully commented melon.yaml string.
 // The outputs block is intentionally omitted — mln install derives output paths
 // automatically from tool_compat using the agent_directory_conventions table.
 // Users can add an explicit outputs block to override the derived paths.
@@ -189,7 +190,7 @@ func generateManifestYAML(name, description string, agentNames []string) string 
 		toolCompatBlock = strings.Join(lines, "\n")
 	}
 
-	return fmt.Sprintf(`# melon.yml — melon package manifest
+	return fmt.Sprintf(`# melon.yaml — melon package manifest
 # Edit this file to add dependencies, then run: mln install
 
 name: %s
@@ -206,7 +207,8 @@ description: "%s"
 #   alice/pdf-skill: "^1.2.0"
 dependencies: {}
 
-# tool_compat drives where mln install places skill directories.
+# tool_compat drives where melon install places skill directories.
+# When empty, skills are placed in .agents/skills/ by default.
 # Melon uses the known directory convention for each tool automatically:
 #   claude-code    -> .claude/skills/
 #   cursor         -> .agents/skills/
@@ -216,7 +218,7 @@ dependencies: {}
 %s
 
 # outputs is optional. Declare it only when you need non-standard placement.
-# If omitted (the default), paths are derived automatically from tool_compat.
+# If omitted, paths are derived from tool_compat (or .agents/skills/ if empty).
 # outputs:
 #   .claude/skills/: "*"
 #   .windsurf/skills/: "alice/pdf-skill"

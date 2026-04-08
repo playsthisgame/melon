@@ -29,7 +29,7 @@ var exampleManifest = manifest.Manifest{
 
 func TestRoundTrip(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "melon.yml")
+	path := filepath.Join(dir, "melon.yaml")
 
 	err := manifest.Save(exampleManifest, path)
 	require.NoError(t, err)
@@ -42,7 +42,7 @@ func TestRoundTrip(t *testing.T) {
 
 func TestRoundTrip_OutputsPreserved(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "melon.yml")
+	path := filepath.Join(dir, "melon.yaml")
 
 	require.NoError(t, manifest.Save(exampleManifest, path))
 	loaded, err := manifest.Load(path)
@@ -52,13 +52,13 @@ func TestRoundTrip_OutputsPreserved(t *testing.T) {
 }
 
 func TestLoad_FileNotFound(t *testing.T) {
-	_, err := manifest.Load("/nonexistent/path/melon.yml")
+	_, err := manifest.Load("/nonexistent/path/melon.yaml")
 	assert.Error(t, err)
 }
 
 func TestLoad_InvalidYAML(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "melon.yml")
+	path := filepath.Join(dir, "melon.yaml")
 	require.NoError(t, os.WriteFile(path, []byte(":\tinvalid: yaml: {{{"), 0644))
 
 	_, err := manifest.Load(path)
@@ -67,7 +67,7 @@ func TestLoad_InvalidYAML(t *testing.T) {
 
 func TestSave_CreatesFile(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "melon.yml")
+	path := filepath.Join(dir, "melon.yaml")
 
 	require.NoError(t, manifest.Save(exampleManifest, path))
 
@@ -75,7 +75,7 @@ func TestSave_CreatesFile(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// TestRoundTrip_NoOutputsBlock verifies that loading a melon.yml with no outputs
+// TestRoundTrip_NoOutputsBlock verifies that loading a melon.yaml with no outputs
 // block and saving it back does NOT produce an empty "outputs: {}" entry.
 func TestRoundTrip_NoOutputsBlock(t *testing.T) {
 	src := `name: my-agent
@@ -85,7 +85,7 @@ tool_compat:
   - claude-code
 `
 	dir := t.TempDir()
-	path := filepath.Join(dir, "melon.yml")
+	path := filepath.Join(dir, "melon.yaml")
 	require.NoError(t, os.WriteFile(path, []byte(src), 0644))
 
 	m, err := manifest.Load(path)
@@ -111,7 +111,7 @@ func TestRoundTrip_EmptyOptionalFields(t *testing.T) {
 	}
 
 	dir := t.TempDir()
-	path := filepath.Join(dir, "melon.yml")
+	path := filepath.Join(dir, "melon.yaml")
 	require.NoError(t, manifest.Save(m, path))
 
 	loaded, err := manifest.Load(path)

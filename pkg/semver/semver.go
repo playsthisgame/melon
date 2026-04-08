@@ -1,6 +1,6 @@
 // Package semver provides thin helpers for semver constraint checking,
 // wrapping golang.org/x/mod/semver and implementing caret (^) and tilde (~)
-// range semantics as used in mln.yaml dependency constraints.
+// range semantics as used in melon.yaml dependency constraints.
 package semver
 
 import (
