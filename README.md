@@ -14,14 +14,13 @@
   <a href="#why-melon">Why melon?</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#manifest-reference">Manifest Reference</a> ·
-  <a href="#commands">Commands</a> ·
-  <a href="#discovering-skills">Discovering Skills</a> ·
-  <a href="#publishing-a-skill">Publishing a Skill</a>
+  <a href="#commands">Commands</a>
 </p>
 
 <p align="center">
   <a href="https://github.com/playsthisgame/melon/actions/workflows/release.yml"><img src="https://github.com/playsthisgame/melon/actions/workflows/release.yml/badge.svg" alt="Release" /></a>
   <a href="https://www.npmjs.com/package/@playsthisgame/melon"><img src="https://img.shields.io/npm/v/@playsthisgame/melon" alt="npm version" /></a>
+  <a href="https://www.npmjs.com/package/@playsthisgame/melon"><img src="https://img.shields.io/npm/dt/@playsthisgame/melon" alt="total downloads" /></a>
   <a href="https://pkg.go.dev/github.com/playsthisgame/melon"><img src="https://pkg.go.dev/badge/github.com/playsthisgame/melon.svg" alt="Go Reference" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/playsthisgame/melon" alt="License" /></a>
 </p>
@@ -189,12 +188,14 @@ mln remove github.com/playsthisgame/skills/agentic-spec-dev
 
 ### `mln search`
 
-Search for skills by keyword. Checks the [melon-index](https://github.com/playsthisgame/melon-index) curated list first, then falls back to GitHub Topics (`melon-skill`) if no curated results are found. In a terminal, results are shown in an interactive list — press Enter to select and be prompted to install.
+Search for skills by keyword against the [melon-index](https://github.com/playsthisgame/melon-index) curated list. In a terminal, results are shown in an interactive list — navigate with `↑↓`, press `Enter` to select, and melon will offer to run `mln add` for you.
 
 ```sh
 mln search spec          # find spec-related skills
 mln search git workflow  # find git workflow skills
 ```
+
+Featured skills appear at the top of results. If nothing matches, melon will tell you and suggest submitting to the index.
 
 ### `mln info`
 
@@ -240,47 +241,6 @@ As AI coding assistants become more capable, teams are building and sharing libr
 **It works naturally with CI.** Run `mln install --frozen` in your pipeline to fail fast if the lock file is out of sync with the manifest. No surprises, no drift. Because `.melon/` and the generated symlinks are committed to the repo, CI doesn't even need network access to place skills, everything is already there.
 
 **Works across your whole team and all your tools.** List the AI tools your project uses under `tool_compat` and melon places each skill into every agent's expected directory at once. One manifest, one install command, every agent ready to go.
-
-## Discovering Skills
-
-Use `mln search` to find skills by keyword:
-
-```sh
-mln search spec
-mln search git workflow
-```
-
-Search checks the [melon-index](https://github.com/playsthisgame/melon-index) — a curated list of reviewed skills — first. If no curated results match, it falls back to GitHub Topics, showing any public repo tagged `melon-skill`. Results from the fallback are marked as community-tagged.
-
-In a terminal, results appear as an interactive list. Navigate with `↑↓`, press `Enter` to select, and melon will offer to run `mln add` for you. Use `mln info` to inspect a skill before installing:
-
-```sh
-mln info github.com/owner/repo/path/to/skill
-```
-
-## Publishing a Skill
-
-There are two ways to make your skill discoverable:
-
-### Option 1 — Submit to the curated index (recommended)
-
-Open a pull request on [melon-index](https://github.com/playsthisgame/melon-index) adding an entry to `index.yml`:
-
-```yaml
-skills:
-  - name: github.com/your-username/your-skill
-    description: "What your skill does"
-    author: your-username
-    tags: [relevant, keywords]
-```
-
-Curated skills appear first in `mln search` results.
-
-### Option 2 — Tag your repo with `melon-skill` (immediate)
-
-Add the `melon-skill` topic to your GitHub repo (repo Settings → About → Topics). Your skill becomes discoverable immediately as a fallback result in `mln search` without waiting for index review.
-
-Tag your release with a semver version (e.g. `v1.0.0`) so users can pin to a specific version with `mln add`.
 
 ## Why melon instead of npx skill installers?
 
