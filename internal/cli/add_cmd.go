@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -33,9 +34,14 @@ func runAdd(cmd *cobra.Command, args []string) error {
 			version, _, err = fetcher.LatestTag(repoURL)
 			return err
 		}); err != nil {
-			return fmt.Errorf("add: resolve latest tag for %s: %w", name, err)
+			if !errors.Is(err, fetcher.ErrNoSemverTags) {
+				return fmt.Errorf("add: resolve latest tag for %s: %w", name, err)
+			}
+			fmt.Fprintf(cmd.OutOrStdout(), "warning: no semver tags found for %s — using main branch\n", name)
+			constraint = "main"
+		} else {
+			constraint = "^" + version
 		}
-		constraint = "^" + version
 	}
 
 	dir, err := resolveProjectDir()
