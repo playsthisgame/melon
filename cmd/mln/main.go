@@ -1,8 +1,18 @@
 package main
 
-import "github.com/playsthisgame/melon/internal/cli"
+import (
+	"runtime/debug"
+
+	"github.com/playsthisgame/melon/internal/cli"
+)
 
 var version = "dev"
+
+func init() {
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		version = info.Main.Version
+	}
+}
 
 func main() {
 	cli.Run("mln", version)
