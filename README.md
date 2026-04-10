@@ -190,6 +190,38 @@ Remove a dependency from `melon.yaml`, unlink its agent symlinks, and delete its
 melon remove github.com/playsthisgame/skills/agentic-spec-dev
 ```
 
+### `melon list`
+
+Show installed skills and audit installation state.
+
+```sh
+melon list                # list all installed skills
+melon list --pending      # show skills in melon.yaml not yet installed
+melon list --check        # verify skill symlinks exist in all tool directories
+melon list --pending --check  # combine both checks
+```
+
+Default output:
+
+```text
+  github.com/anthropics/skills/skills/skill-creator  main
+  github.com/playsthisgame/skills/agentic-spec-dev   1.2.0
+```
+
+With `--check`:
+
+```text
+  OK       github.com/playsthisgame/skills/agentic-spec-dev@1.2.0   .claude/skills/agentic-spec-dev
+  MISSING  github.com/anthropics/skills/skills/skill-creator@main    .claude/skills/skill-creator
+```
+
+With `--pending`:
+
+```text
+Pending (not installed):
+  github.com/owner/repo/some-new-skill
+```
+
 ### `melon search`
 
 Search for skills by keyword against the [melon-index](https://github.com/playsthisgame/melon-index) curated list. In a terminal, results are shown in an interactive list — navigate with `↑↓`, press `Enter` to select, and melon will offer to run `melon add` for you.
