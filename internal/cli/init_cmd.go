@@ -90,7 +90,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("init: create .melon/: %w", err)
 	}
 
-	fmt.Fprintln(cmd.OutOrStdout(), "melon.yaml created. Add dependencies with: mln add <dep>")
+	fmt.Fprintln(cmd.OutOrStdout(), "melon.yaml created. Add dependencies with: melon add <dep>")
 	return nil
 }
 
@@ -201,7 +201,7 @@ description: "%s"
 # dependencies lists skills this project depends on.
 # Keys are GitHub shorthand (owner/repo) or monorepo paths (owner/repo/path/to/skill).
 # Values are semver constraints (^, ~, or exact) or a branch name (e.g. "main").
-# Add with: mln add <dep>
+# Add with: melon add <dep>
 # Example:
 #   anthropics/skills/skills/skill-creator: "main"
 #   alice/pdf-skill: "^1.2.0"
