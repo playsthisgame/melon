@@ -26,9 +26,9 @@ var addCmd = &cobra.Command{
 }
 
 var removeCmd = &cobra.Command{
-	Use:   "remove <name>",
+	Use:   "remove [name]",
 	Short: "Remove a dependency from melon.yaml and update .melon/ and melon.lock",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runRemove,
 }
 
