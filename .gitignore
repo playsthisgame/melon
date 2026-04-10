@@ -3,9 +3,14 @@
 /mln
 /bin/
 
-# Downloaded npm binaries (placed by postinstall)
-/npm/mln
-/npm/mln.exe
+# Binaries and packed tarballs in sub-packages (placed/created by CI at release time)
+npm/packages/**/*.tgz
+
+/npm/packages/melon-darwin-arm64/mln
+/npm/packages/melon-darwin-x64/mln
+/npm/packages/melon-linux-arm64/mln
+/npm/packages/melon-linux-x64/mln
+/npm/packages/melon-windows-x64/mln.exe
 
 # Go build/test cache
 *.test

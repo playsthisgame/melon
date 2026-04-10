@@ -1,0 +1,13 @@
+{
+  "name": "@playsthisgame/melon-linux-arm64",
+  "version": "0.0.0",
+  "description": "linux arm64 binary for @playsthisgame/melon",
+  "os": ["linux"],
+  "cpu": ["arm64"],
+  "files": ["mln"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/playsthisgame/melon"
+  }
+}

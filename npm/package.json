@@ -1,18 +1,21 @@
 {
   "name": "@playsthisgame/melon",
-  "version": "0.1.1",
+  "version": "0.0.0",
   "description": "A dependency manager for agentic markdown — skills, agents, and prompts for your AI tools.",
   "bin": {
     "mln": "./bin/mln.js",
     "melon": "./bin/mln.js"
   },
-  "scripts": {
-    "postinstall": "node postinstall.js"
-  },
   "files": [
-    "bin/mln.js",
-    "postinstall.js"
+    "bin/mln.js"
   ],
+  "optionalDependencies": {
+    "@playsthisgame/melon-darwin-arm64": "0.0.0",
+    "@playsthisgame/melon-darwin-x64": "0.0.0",
+    "@playsthisgame/melon-linux-arm64": "0.0.0",
+    "@playsthisgame/melon-linux-x64": "0.0.0",
+    "@playsthisgame/melon-windows-x64": "0.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/playsthisgame/melon"
