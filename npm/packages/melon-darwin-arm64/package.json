@@ -1,0 +1,19 @@
+{
+  "name": "@playsthisgame/melon-darwin-arm64",
+  "version": "0.0.0",
+  "description": "darwin arm64 binary for @playsthisgame/melon",
+  "os": [
+    "darwin"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "files": [
+    "mln"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/playsthisgame/melon"
+  }
+}

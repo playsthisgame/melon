@@ -44,16 +44,63 @@ jobs:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Download release binaries
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          gh release download "v${VERSION}" \
+            --pattern "mln_${VERSION}_darwin_arm64.tar.gz" \
+            --pattern "mln_${VERSION}_darwin_amd64.tar.gz" \
+            --pattern "mln_${VERSION}_linux_arm64.tar.gz" \
+            --pattern "mln_${VERSION}_linux_amd64.tar.gz" \
+            --pattern "mln_${VERSION}_windows_amd64.zip" \
+            --dir /tmp/goreleaser
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract and place binaries
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          cd /tmp/goreleaser
+
+          tar -xzf "mln_${VERSION}_darwin_arm64.tar.gz" mln
+          cp mln $GITHUB_WORKSPACE/npm/packages/melon-darwin-arm64/mln
+          chmod +x $GITHUB_WORKSPACE/npm/packages/melon-darwin-arm64/mln
+
+          tar -xzf "mln_${VERSION}_darwin_amd64.tar.gz" mln
+          cp mln $GITHUB_WORKSPACE/npm/packages/melon-darwin-x64/mln
+          chmod +x $GITHUB_WORKSPACE/npm/packages/melon-darwin-x64/mln
+
+          tar -xzf "mln_${VERSION}_linux_arm64.tar.gz" mln
+          cp mln $GITHUB_WORKSPACE/npm/packages/melon-linux-arm64/mln
+          chmod +x $GITHUB_WORKSPACE/npm/packages/melon-linux-arm64/mln
+
+          tar -xzf "mln_${VERSION}_linux_amd64.tar.gz" mln
+          cp mln $GITHUB_WORKSPACE/npm/packages/melon-linux-x64/mln
+          chmod +x $GITHUB_WORKSPACE/npm/packages/melon-linux-x64/mln
+
+          unzip "mln_${VERSION}_windows_amd64.zip" mln.exe
+          cp mln.exe $GITHUB_WORKSPACE/npm/packages/melon-windows-x64/mln.exe
+
+      - name: Set version on all packages
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          for dir in melon-darwin-arm64 melon-darwin-x64 melon-linux-arm64 melon-linux-x64 melon-windows-x64; do
+            (cd npm/packages/$dir && npm version "$VERSION" --no-git-tag-version)
+          done
+          (cd npm && npm version "$VERSION" --no-git-tag-version)
+
       - name: Copy README
         run: cp README.md npm/README.md
 
-      - name: Set version from tag
+      - name: Publish sub-packages
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
-          npm version "$VERSION" --no-git-tag-version
-        working-directory: npm
+          for dir in melon-darwin-arm64 melon-darwin-x64 melon-linux-arm64 melon-linux-x64 melon-windows-x64; do
+            (cd npm/packages/$dir && npm publish --access public)
+          done
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Publish to npm
+      - name: Publish main package
         run: npm publish --access public
         working-directory: npm
         env:

@@ -1,0 +1,13 @@
+{
+  "name": "@playsthisgame/melon-windows-x64",
+  "version": "0.0.0",
+  "description": "windows x64 binary for @playsthisgame/melon",
+  "os": ["win32"],
+  "cpu": ["x64"],
+  "files": ["mln.exe"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/playsthisgame/melon"
+  }
+}
