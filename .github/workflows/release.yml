@@ -89,6 +89,16 @@ jobs:
           done
           (cd npm && npm version "$VERSION" --no-git-tag-version)
 
+      - name: Update optionalDependencies versions in main package
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          cd npm
+          npm pkg set "optionalDependencies.@playsthisgame/melon-darwin-arm64=$VERSION"
+          npm pkg set "optionalDependencies.@playsthisgame/melon-darwin-x64=$VERSION"
+          npm pkg set "optionalDependencies.@playsthisgame/melon-linux-arm64=$VERSION"
+          npm pkg set "optionalDependencies.@playsthisgame/melon-linux-x64=$VERSION"
+          npm pkg set "optionalDependencies.@playsthisgame/melon-windows-x64=$VERSION"
+
       - name: Copy README
         run: cp README.md npm/README.md
 
