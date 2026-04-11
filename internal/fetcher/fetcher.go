@@ -226,7 +226,18 @@ func TreeHash(dir string) (hash string, files []string, err error) {
 	for _, rel := range paths {
 		// Include the path in the hash so renaming a file changes the tree hash.
 		fmt.Fprintf(h, "%s\n", rel)
-		f, err := os.Open(filepath.Join(dir, filepath.FromSlash(rel)))
+		fullPath := filepath.Join(dir, filepath.FromSlash(rel))
+		// Hash symlinks by their target string, not their content, so we don't
+		// fail on dangling symlinks and still detect target changes.
+		if info, err := os.Lstat(fullPath); err == nil && info.Mode()&fs.ModeSymlink != 0 {
+			target, err := os.Readlink(fullPath)
+			if err != nil {
+				return "", nil, fmt.Errorf("fetcher: readlink %s: %w", rel, err)
+			}
+			fmt.Fprintf(h, "symlink:%s\n", target)
+			continue
+		}
+		f, err := os.Open(fullPath)
 		if err != nil {
 			return "", nil, fmt.Errorf("fetcher: open %s: %w", rel, err)
 		}
@@ -346,6 +357,13 @@ func copyDir(src, dst string) error {
 		dstPath := filepath.Join(dst, rel)
 		if d.IsDir() {
 			return os.MkdirAll(dstPath, 0755)
+		}
+		if d.Type()&fs.ModeSymlink != 0 {
+			target, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+			return os.Symlink(target, dstPath)
 		}
 		return copyFile(path, dstPath)
 	})
