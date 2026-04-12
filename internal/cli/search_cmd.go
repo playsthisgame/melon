@@ -3,13 +3,15 @@ package cli
 import (
 	"bufio"
 	"fmt"
-	"os"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/playsthisgame/melon/internal/index"
 	"github.com/spf13/cobra"
 )
+
+// runAddFn is the function used to add a skill. Overridable in tests.
+var runAddFn = runAdd
 
 var searchCmd = &cobra.Command{
 	Use:   "search <term>",
@@ -113,18 +115,18 @@ func offerAddMany(cmd *cobra.Command, paths []string) error {
 	for _, p := range paths {
 		fmt.Fprintf(cmd.OutOrStdout(), "  - %s\n", p)
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "Install %d skill(s)? [y/N]: ", len(paths))
+	fmt.Fprintf(cmd.OutOrStdout(), "Install %d skill(s)? [Y/n]: ", len(paths))
 
-	reader := bufio.NewReader(os.Stdin)
+	reader := bufio.NewReader(cmd.InOrStdin())
 	input, _ := reader.ReadString('\n')
 	input = strings.TrimSpace(strings.ToLower(input))
 
-	if input != "y" && input != "yes" {
+	if input != "" && input != "y" && input != "yes" {
 		return nil
 	}
 
 	for _, p := range paths {
-		if err := runAdd(cmd, []string{p}); err != nil {
+		if err := runAddFn(cmd, []string{p}); err != nil {
 			fmt.Fprintf(cmd.OutOrStdout(), "error installing %s: %v\n", p, err)
 		}
 	}
