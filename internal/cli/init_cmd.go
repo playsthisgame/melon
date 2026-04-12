@@ -191,7 +191,7 @@ func generateManifestYAML(name, description string, agentNames []string) string 
 	}
 
 	return fmt.Sprintf(`# melon.yaml — melon package manifest
-# Edit this file to add dependencies, then run: mln install
+# Edit this file to add dependencies, then run: melon install
 
 name: %s
 version: %s
