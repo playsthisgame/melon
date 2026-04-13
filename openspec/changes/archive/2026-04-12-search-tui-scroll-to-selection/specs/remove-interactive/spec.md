@@ -1,4 +1,4 @@
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: mln remove with no arguments launches an interactive multi-select in a TTY
 When `mln remove` is invoked with no arguments in a TTY, the system SHALL read all skills from `melon.yaml` and present a bubbletea-driven multi-select list. The user navigates with arrow keys, toggles selections with space, and confirms with enter. After confirmation, a prompt SHALL ask the user to confirm the destructive action before any skills are removed. The list viewport SHALL be sized to fit the current terminal height so the cursor is always visible without the user needing to resize the terminal.
@@ -36,13 +36,5 @@ When `mln remove` is invoked with no arguments in a TTY, the system SHALL read a
 - **THEN** the command SHALL print "No skills in melon.yaml." and exit with status 0 without launching the TUI
 
 #### Scenario: Short terminal does not hide the cursor
-
 - **WHEN** the terminal height is smaller than the full skill list height
 - **THEN** the list is clamped to fit the terminal and the cursor at index 0 is visible on first render
-
-### Requirement: mln remove with no arguments in a non-TTY exits with an error
-When `mln remove` is invoked with no arguments outside of a TTY (e.g., in CI or piped input), the system SHALL exit with a non-zero status and print a message instructing the user to provide a skill name.
-
-#### Scenario: Non-TTY invocation without arguments
-- **WHEN** `mln remove` is run with no arguments and stdout is not a TTY
-- **THEN** the command SHALL exit non-zero and print an error such as "remove: skill name required (non-interactive mode)"
