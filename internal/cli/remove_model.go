@@ -85,6 +85,15 @@ func (m removeModel) Init() tea.Cmd { return nil }
 
 func (m removeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		available := msg.Height - listReservedRows
+		if available < 2 {
+			available = 2
+		}
+		if available < m.list.Height() {
+			m.list.SetHeight(available)
+		}
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:

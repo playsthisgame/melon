@@ -9,6 +9,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+// listReservedRows is the number of terminal rows consumed by chrome outside the
+// list itself: title line, hint bar, and trailing newline. Both searchModel and
+// removeModel use this to cap their list height to the available terminal space.
+const listReservedRows = 3
+
 // searchResultItem is a single entry in the search results list.
 type searchResultItem struct {
 	path        string
@@ -86,10 +91,11 @@ func newSearchModel(results []searchResultItem) searchModel {
 		items[i] = r
 	}
 
-	// Height: 2 lines per item, cap at 10 visible items (20 lines).
+	// Height: 2 lines per item + 2 rows of bubbles list internal chrome.
+	// Cap at 5 visible items: 5*2 + 2 = 12.
 	height := len(results) * 2
-	if height > 20 {
-		height = 20
+	if height > 12 {
+		height = 12
 	}
 
 	sel := map[int]bool{}
@@ -106,6 +112,18 @@ func (m searchModel) Init() tea.Cmd { return nil }
 
 func (m searchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		available := msg.Height - listReservedRows
+		if available < 2 {
+			available = 2
+		}
+		// Only shrink to fit the terminal. Expanding beyond the initial
+		// content-capped height causes the bubbles list to scroll its
+		// viewport to the bottom, hiding the top results.
+		if available < m.list.Height() {
+			m.list.SetHeight(available)
+		}
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
