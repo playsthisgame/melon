@@ -66,9 +66,11 @@ func newRemoveModel(skills []removeSkillItem) removeModel {
 		items[i] = s
 	}
 
-	height := len(skills)
-	if height > 20 {
-		height = 20
+	// Height: 1 line per item + 2 rows of bubbles list internal chrome.
+	// Cap at 20 visible items: 20 + 2 = 22.
+	height := len(skills) + 2
+	if height > 22 {
+		height = 22
 	}
 
 	sel := map[int]bool{}
