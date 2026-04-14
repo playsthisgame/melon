@@ -92,10 +92,11 @@ func newSearchModel(results []searchResultItem) searchModel {
 	}
 
 	// Height: 2 lines per item + 2 rows of bubbles list internal chrome.
-	// Cap at 5 visible items: 5*2 + 2 = 12.
-	height := len(results) * 2
-	if height > 12 {
-		height = 12
+	// The chrome overhead must be added on top of the item rows.
+	// Cap at 10 visible items: 10*2 + 2 = 22.
+	height := len(results)*2 + 2
+	if height > 22 {
+		height = 22
 	}
 
 	sel := map[int]bool{}
