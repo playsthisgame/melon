@@ -190,6 +190,17 @@ Remove a dependency from `melon.yaml`, unlink its agent symlinks, and delete its
 melon remove github.com/playsthisgame/skills/agentic-spec-dev
 ```
 
+### `melon update`
+
+Update dependencies to the latest version satisfying their existing constraints. Without arguments, shows an interactive multi-select list (TTY only) — the first option updates all deps. With a dep name, targets that dep directly.
+
+```sh
+melon update                                                    # interactive: pick which deps to update
+melon update github.com/playsthisgame/skills/agentic-spec-dev  # update a specific dep
+```
+
+If a newer major version exists outside your constraint, a hint is printed showing how to upgrade with `melon add`.
+
 ### `melon list`
 
 Show installed skills and audit installation state.

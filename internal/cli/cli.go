@@ -32,6 +32,13 @@ var removeCmd = &cobra.Command{
 	RunE:  runRemove,
 }
 
+var updateCmd = &cobra.Command{
+	Use:   "update [dep]",
+	Short: "Update dependencies to the latest compatible version",
+	Args:  cobra.MaximumNArgs(1),
+	RunE:  runUpdate,
+}
+
 var (
 	flagFrozen  bool
 	flagNoPlace bool
@@ -52,7 +59,7 @@ func Run(name, version string) {
 	rootCmd.PersistentFlags().StringVar(&flagDir, "dir", "", "project root directory (default: current working directory)")
 	rootCmd.PersistentFlags().BoolVar(&flagVerbose, "verbose", false, "enable verbose output")
 
-	rootCmd.AddCommand(initCmd, installCmd, addCmd, removeCmd, listCmd, searchCmd, infoCmd)
+	rootCmd.AddCommand(initCmd, installCmd, addCmd, removeCmd, updateCmd, listCmd, searchCmd, infoCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
