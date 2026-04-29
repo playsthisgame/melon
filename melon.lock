@@ -1,4 +1,4 @@
-generated_at: "2026-04-11T19:59:44Z"
+generated_at: "2026-04-29T03:02:52Z"
 dependencies:
     - name: github.com/affaan-m/everything-claude-code/skills/golang-testing
       version: 1.10.0
@@ -10,7 +10,7 @@ dependencies:
       files:
         - SKILL.md
     - name: github.com/forrestchang/andrej-karpathy-skills/skills/karpathy-guidelines
-      version: aa4467f0b33e
+      version: 2c606141936f
       git_tag: main
       repo_url: https://github.com/forrestchang/andrej-karpathy-skills
       subdir: skills/karpathy-guidelines
@@ -19,8 +19,8 @@ dependencies:
       files:
         - SKILL.md
     - name: github.com/jeffallan/claude-skills/skills/golang-pro
-      version: 0.4.11
-      git_tag: v0.4.11
+      version: 0.4.12
+      git_tag: v0.4.12
       repo_url: https://github.com/jeffallan/claude-skills
       subdir: skills/golang-pro
       entrypoint: SKILL.md

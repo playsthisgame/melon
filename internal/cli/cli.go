@@ -39,6 +39,13 @@ var updateCmd = &cobra.Command{
 	RunE:  runUpdate,
 }
 
+var outdatedCmd = &cobra.Command{
+	Use:   "outdated",
+	Short: "Show which dependencies have newer versions available",
+	Args:  cobra.NoArgs,
+	RunE:  runOutdated,
+}
+
 var (
 	flagFrozen  bool
 	flagNoPlace bool
@@ -59,7 +66,7 @@ func Run(name, version string) {
 	rootCmd.PersistentFlags().StringVar(&flagDir, "dir", "", "project root directory (default: current working directory)")
 	rootCmd.PersistentFlags().BoolVar(&flagVerbose, "verbose", false, "enable verbose output")
 
-	rootCmd.AddCommand(initCmd, installCmd, addCmd, removeCmd, updateCmd, listCmd, searchCmd, infoCmd)
+	rootCmd.AddCommand(initCmd, installCmd, addCmd, removeCmd, updateCmd, outdatedCmd, listCmd, searchCmd, infoCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
