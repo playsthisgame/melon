@@ -201,6 +201,16 @@ melon update github.com/playsthisgame/skills/agentic-spec-dev  # update a specif
 
 If a newer major version exists outside your constraint, a hint is printed showing how to upgrade with `melon add`.
 
+### `melon outdated`
+
+Show which dependencies have newer versions available, without modifying anything. Exits with code 1 if any dep is outdated — useful in CI.
+
+```sh
+melon outdated
+```
+
+Output includes current locked version, latest compatible version, and absolute latest (when a newer major exists outside your constraint). Branch-pinned deps are skipped.
+
 ### `melon list`
 
 Show installed skills and audit installation state.
