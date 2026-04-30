@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/playsthisgame/melon/internal/fetcher"
 	"github.com/playsthisgame/melon/internal/lockfile"
 	"github.com/playsthisgame/melon/internal/manifest"
@@ -187,24 +188,46 @@ func runInstall(cmd *cobra.Command, args []string) error {
 }
 
 func fetchDeps(resolved []resolver.ResolvedDep, dir string, onFetch func(i int, name string, err error)) ([]lockfile.LockedDep, error) {
-	var locked []lockfile.LockedDep
+	const maxConcurrent = 4
+	sem := make(chan struct{}, maxConcurrent)
+
+	locked := make([]lockfile.LockedDep, len(resolved))
+	errs := make([]error, len(resolved))
+	var wg sync.WaitGroup
+
 	for i, dep := range resolved {
-		installDir := store.InstalledPath(dir, dep)
-		result, err := fetchFn(dep, installDir)
-		onFetch(i, fmt.Sprintf("%s@%s", dep.Name, dep.Version), err)
+		wg.Add(1)
+		go func(i int, dep resolver.ResolvedDep) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			installDir := store.InstalledPath(dir, dep)
+			result, err := fetcher.Fetch(dep, installDir)
+			onFetch(i, fmt.Sprintf("%s@%s", dep.Name, dep.Version), err)
+			if err != nil {
+				errs[i] = fmt.Errorf("install: fetch %s: %w", dep.Name, err)
+				return
+			}
+			locked[i] = lockfile.LockedDep{
+				Name:       dep.Name,
+				Version:    dep.Version,
+				GitTag:     dep.GitTag,
+				RepoURL:    dep.RepoURL,
+				Subdir:     dep.Subdir,
+				Entrypoint: dep.Entrypoint,
+				TreeHash:   result.TreeHash,
+				Files:      result.Files,
+			}
+		}(i, dep)
+	}
+
+	wg.Wait()
+
+	for _, err := range errs {
 		if err != nil {
-			return nil, fmt.Errorf("install: fetch %s: %w", dep.Name, err)
+			return nil, err
 		}
-		locked = append(locked, lockfile.LockedDep{
-			Name:       dep.Name,
-			Version:    dep.Version,
-			GitTag:     dep.GitTag,
-			RepoURL:    dep.RepoURL,
-			Subdir:     dep.Subdir,
-			Entrypoint: dep.Entrypoint,
-			TreeHash:   result.TreeHash,
-			Files:      result.Files,
-		})
 	}
 	return locked, nil
 }

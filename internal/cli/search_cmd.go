@@ -2,16 +2,19 @@ package cli
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/playsthisgame/melon/internal/fetcher"
 	"github.com/playsthisgame/melon/internal/index"
+	"github.com/playsthisgame/melon/internal/manifest"
 	"github.com/spf13/cobra"
 )
 
-// runAddFn is the function used to add a skill. Overridable in tests.
-var runAddFn = runAdd
+// runInstallFn is the function used to install after manifest updates. Overridable in tests.
+var runInstallFn func(*cobra.Command, []string) error = runInstall
 
 var searchCmd = &cobra.Command{
 	Use:   "search <term>",
@@ -109,7 +112,9 @@ func runSearchTUI(items []searchResultItem) ([]string, error) {
 	return final.(searchModel).selected, nil
 }
 
-// offerAddMany prints the selected skills and prompts the user to install them all.
+// offerAddMany prints the selected skills, prompts for confirmation, then adds
+// all of them to melon.yaml in one pass before running a single install so that
+// parallel fetching can operate on all new deps at once.
 func offerAddMany(cmd *cobra.Command, paths []string) error {
 	fmt.Fprintf(cmd.OutOrStdout(), "\nSelected skills:\n")
 	for _, p := range paths {
@@ -125,10 +130,53 @@ func offerAddMany(cmd *cobra.Command, paths []string) error {
 		return nil
 	}
 
-	for _, p := range paths {
-		if err := runAddFn(cmd, []string{p}); err != nil {
-			fmt.Fprintf(cmd.OutOrStdout(), "error installing %s: %v\n", p, err)
-		}
+	dir, err := resolveProjectDir()
+	if err != nil {
+		return err
 	}
-	return nil
+	manifestPath := manifest.FindPath(dir)
+
+	m, err := manifest.Load(manifestPath)
+	if err != nil {
+		return fmt.Errorf("search: %w", err)
+	}
+	if m.Dependencies == nil {
+		m.Dependencies = make(map[string]string)
+	}
+
+	// Resolve the latest tag for each selected skill and write them all to
+	// melon.yaml before running install, so the parallel fetcher can work on
+	// all new deps in a single pass.
+	for _, p := range paths {
+		name, constraint, hasConstraint := strings.Cut(p, "@")
+		if !hasConstraint || constraint == "" {
+			repoURL, _ := fetcher.ParseDepName(name)
+			var version string
+			if err := withSpinner(fmt.Sprintf("Resolving %s…", name), func() error {
+				var err error
+				version, _, err = fetcher.LatestTag(repoURL)
+				return err
+			}); err != nil {
+				if !errors.Is(err, fetcher.ErrNoSemverTags) {
+					fmt.Fprintf(cmd.OutOrStdout(), "warning: could not resolve %s: %v — skipping\n", name, err)
+					continue
+				}
+				fmt.Fprintf(cmd.OutOrStdout(), "warning: no semver tags found for %s — using main branch\n", name)
+				constraint = "main"
+			} else {
+				constraint = "^" + version
+			}
+		}
+		if existing, ok := m.Dependencies[name]; ok {
+			fmt.Fprintf(cmd.OutOrStdout(), "warning: updating %s from %s to %s\n", name, existing, constraint)
+		}
+		m.Dependencies[name] = constraint
+		fmt.Fprintf(cmd.OutOrStdout(), "Added %s %s to melon.yaml\n", name, constraint)
+	}
+
+	if err := manifest.Save(m, manifestPath); err != nil {
+		return fmt.Errorf("search: save melon.yaml: %w", err)
+	}
+
+	return runInstallFn(cmd, nil)
 }

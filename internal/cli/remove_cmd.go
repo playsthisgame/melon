@@ -87,8 +87,9 @@ func runRemoveInteractive(cmd *cobra.Command) error {
 	return offerRemoveMany(cmd, selected)
 }
 
-// offerRemoveMany prints the selected skills, prompts for confirmation, and
-// removes each confirmed skill.
+// offerRemoveMany prints the selected skills, prompts for confirmation, then
+// removes all of them from melon.yaml in one pass before running a single
+// install so that fetch and prune operate on all changes at once.
 func offerRemoveMany(cmd *cobra.Command, names []string) error {
 	fmt.Fprintf(cmd.OutOrStdout(), "\nSelected skills:\n")
 	for _, n := range names {
@@ -104,10 +105,27 @@ func offerRemoveMany(cmd *cobra.Command, names []string) error {
 		return nil
 	}
 
-	for _, n := range names {
-		if err := runRemove(cmd, []string{n}); err != nil {
-			fmt.Fprintf(cmd.OutOrStdout(), "error removing %s: %v\n", n, err)
-		}
+	dir, err := resolveProjectDir()
+	if err != nil {
+		return err
 	}
-	return nil
+	manifestPath := manifest.FindPath(dir)
+
+	m, err := manifest.Load(manifestPath)
+	if err != nil {
+		return fmt.Errorf("remove: %w", err)
+	}
+
+	for _, n := range names {
+		delete(m.Dependencies, n)
+		fmt.Fprintf(cmd.OutOrStdout(), "Removed %s from melon.yaml\n", n)
+	}
+
+	if err := manifest.Save(m, manifestPath); err != nil {
+		return fmt.Errorf("remove: save melon.yaml: %w", err)
+	}
+
+	return withSpinner("Updating…", func() error {
+		return runInstall(cmd, nil)
+	})
 }
