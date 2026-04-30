@@ -23,6 +23,15 @@ var (
 	removeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("1")).Bold(true)
 )
 
+// resolveVersionFn and fetchManifestFn are the functions used by runInstall to
+// resolve versions and fetch dependency manifests. They are package-level
+// variables so tests can inject fakes without network access.
+var (
+	resolveVersionFn = fetcher.LatestMatchingVersion
+	fetchManifestFn  = resolver.DefaultFetchManifest
+	fetchFn          = fetcher.Fetch
+)
+
 func runInstall(cmd *cobra.Command, args []string) error {
 	dir, err := resolveProjectDir()
 	if err != nil {
@@ -70,7 +79,7 @@ func runInstall(cmd *cobra.Command, args []string) error {
 
 	// Resolve the full transitive dependency graph.
 	fmt.Fprintln(cmd.OutOrStdout(), "Resolving dependencies...")
-	resolved, err := resolver.Resolve(m, fetcher.LatestMatchingVersion, resolver.DefaultFetchManifest)
+	resolved, err := resolver.Resolve(m, resolveVersionFn, fetchManifestFn)
 	if err != nil {
 		return fmt.Errorf("install: %w", err)
 	}
@@ -81,7 +90,9 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		model := newInstallProgressModel(len(resolved))
 		p := tea.NewProgram(model)
 		var fetchErr error
+		done := make(chan struct{})
 		go func() {
+			defer close(done)
 			locked, fetchErr = fetchDeps(resolved, dir, func(i int, name string, e error) {
 				p.Send(depFetchedMsg{index: i, name: name, total: len(resolved), err: e})
 			})
@@ -92,8 +103,10 @@ func runInstall(cmd *cobra.Command, args []string) error {
 			}
 		}()
 		if _, runErr := p.Run(); runErr != nil {
+			<-done
 			return fmt.Errorf("install: %w", runErr)
 		}
+		<-done // ensure goroutine has written locked and fetchErr before we read them
 		if fetchErr != nil {
 			return fetchErr
 		}
@@ -148,6 +161,21 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Delete stale store entries for updated deps (old version dirs are no longer needed).
+	if len(diff.Updated) > 0 {
+		oldByName := make(map[string]string, len(oldLock.Dependencies))
+		for _, dep := range oldLock.Dependencies {
+			oldByName[dep.Name] = dep.Version
+		}
+		for _, dep := range diff.Updated {
+			if oldVersion, ok := oldByName[dep.Name]; ok {
+				if err := store.Remove(dir, resolver.ResolvedDep{Name: dep.Name, Version: oldVersion}); err != nil {
+					return fmt.Errorf("install: remove old store entry %s@%s: %w", dep.Name, oldVersion, err)
+				}
+			}
+		}
+	}
+
 	// Place skills into agent directories unless --no-place is set.
 	if !flagNoPlace {
 		if err := placer.Place(resolved, m, dir, cmd.OutOrStdout()); err != nil {
@@ -162,7 +190,7 @@ func fetchDeps(resolved []resolver.ResolvedDep, dir string, onFetch func(i int, 
 	var locked []lockfile.LockedDep
 	for i, dep := range resolved {
 		installDir := store.InstalledPath(dir, dep)
-		result, err := fetcher.Fetch(dep, installDir)
+		result, err := fetchFn(dep, installDir)
 		onFetch(i, fmt.Sprintf("%s@%s", dep.Name, dep.Version), err)
 		if err != nil {
 			return nil, fmt.Errorf("install: fetch %s: %w", dep.Name, err)

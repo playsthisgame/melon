@@ -1,4 +1,4 @@
-generated_at: "2026-04-29T03:02:52Z"
+generated_at: "2026-04-30T02:28:42Z"
 dependencies:
     - name: github.com/affaan-m/everything-claude-code/skills/golang-testing
       version: 1.10.0
@@ -19,12 +19,12 @@ dependencies:
       files:
         - SKILL.md
     - name: github.com/jeffallan/claude-skills/skills/golang-pro
-      version: 0.4.12
-      git_tag: v0.4.12
+      version: 0.4.13
+      git_tag: v0.4.13
       repo_url: https://github.com/jeffallan/claude-skills
       subdir: skills/golang-pro
       entrypoint: SKILL.md
-      tree_hash: sha256:f527e3f3bf1ca1ba1a412fcaa0587b72eb62af0cee39b1ace4e9db08a53d18f6
+      tree_hash: sha256:a327a6d321f7f57a21fb251b85a139d406479f8ce7e5ba0eb8962dae4f4c79d6
       files:
         - SKILL.md
         - references/concurrency.md
