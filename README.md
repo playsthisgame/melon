@@ -67,7 +67,7 @@ Edit `melon.yaml` directly:
 
 ```yaml
 dependencies:
-  github.com/playsthisgame/skills/agentic-spec-dev: "^1.0.0"
+  github.com/playsthisgame/melon-index/skills/video-to-gif: "^1.0.2"
   github.com/anthropics/skills/skills/skill-creator: "main"
 ```
 
@@ -87,10 +87,10 @@ melon install
 Melon resolves each dependency, fetches it via sparse git checkout, writes `melon.lock`, and places skills into your tool directories.
 
 ```
-  resolving github.com/playsthisgame/skills/agentic-spec-dev (^1.0.0)...
-  fetching github.com/playsthisgame/skills/agentic-spec-dev@1.0.0...
-  + github.com/playsthisgame/skills/agentic-spec-dev@1.0.0
-  linked github.com/playsthisgame/skills/agentic-spec-dev -> .claude/playsthisgame/agentic-spec-dev
+  resolving github.com/playsthisgame/melon-index/skills/video-to-gif (^1.0.2)...
+  fetching github.com/playsthisgame/melon-index/skills/video-to-gif@1.0.2...
+  + github.com/playsthisgame/melon-index/skills/video-to-gif@1.0.2
+  linked github.com/playsthisgame/melon-index/skills/video-to-gif -> .claude/playsthisgame/video-to-gif
 ```
 
 ## How it works
@@ -116,7 +116,7 @@ description: "My coding agent"
 
 dependencies:
   github.com/anthropics/skills/skills/skill-creator: "main"
-  github.com/playsthisgame/skills/agentic-spec-dev: "^1.0.0"
+  github.com/playsthisgame/melon-index/skills/video-to-gif: "^1.0.2"
 
 # tool_compat drives where melon install places skills.
 # Melon knows the conventions for each agent automatically:
@@ -177,9 +177,9 @@ melon install --no-place  # fetch and lock only — skip placement into agent di
 Add a dependency to `melon.yaml` and run install. If no version is specified, the latest semver tag is resolved automatically.
 
 ```sh
-melon add github.com/playsthisgame/skills/agentic-spec-dev          # resolves latest tag → ^1.2.0
-melon add github.com/playsthisgame/skills/agentic-spec-dev@^1.0.0   # explicit constraint
-melon add github.com/playsthisgame/skills/agentic-spec-dev@main     # branch pin
+melon add github.com/playsthisgame/melon-index/skills/video-to-gif          # resolves latest tag → ^1.2.0
+melon add github.com/playsthisgame/melon-index/skills/video-to-gif@^1.0.0   # explicit constraint
+melon add github.com/playsthisgame/melon-index/skills/video-to-gif@main     # branch pin
 ```
 
 ### `melon remove`
@@ -187,7 +187,7 @@ melon add github.com/playsthisgame/skills/agentic-spec-dev@main     # branch pin
 Remove a dependency from `melon.yaml`, unlink its agent symlinks, and delete its `.melon/` cache entry.
 
 ```sh
-melon remove github.com/playsthisgame/skills/agentic-spec-dev
+melon remove github.com/playsthisgame/melon-index/skills/video-to-gif
 ```
 
 ### `melon update`
@@ -196,7 +196,7 @@ Update dependencies to the latest version satisfying their existing constraints.
 
 ```sh
 melon update                                                    # interactive: pick which deps to update
-melon update github.com/playsthisgame/skills/agentic-spec-dev  # update a specific dep
+melon update github.com/playsthisgame/melon-index/skills/video-to-gif  # update a specific dep
 ```
 
 If a newer major version exists outside your constraint, a hint is printed showing how to upgrade with `melon add`.
@@ -226,13 +226,13 @@ Default output:
 
 ```text
   github.com/anthropics/skills/skills/skill-creator  main
-  github.com/playsthisgame/skills/agentic-spec-dev   1.2.0
+  github.com/playsthisgame/melon-index/skills/video-to-gif   1.2.0
 ```
 
 With `--check`:
 
 ```text
-  OK       github.com/playsthisgame/skills/agentic-spec-dev@1.2.0   .claude/skills/agentic-spec-dev
+  OK       github.com/playsthisgame/melon-index/skills/video-to-gif@1.2.0   .claude/skills/video-to-gif
   MISSING  github.com/anthropics/skills/skills/skill-creator@main    .claude/skills/skill-creator
 ```
 
@@ -259,7 +259,7 @@ Featured skills appear at the top of results. If nothing matches, melon will tel
 Show metadata for a specific skill — description, author, and available versions — before installing it.
 
 ```sh
-melon info github.com/playsthisgame/skills/agentic-spec-dev
+melon info github.com/playsthisgame/melon-index/skills/video-to-gif
 melon info github.com/owner/repo/path/to/skill
 ```
 
@@ -270,11 +270,11 @@ melon info github.com/owner/repo/path/to/skill
 ```yaml
 generated_at: "2025-03-31T12:00:00Z"
 dependencies:
-  - name: github.com/playsthisgame/skills/agentic-spec-dev
+  - name: github.com/playsthisgame/melon-index/skills/video-to-gif
     version: "1.2.0"
     git_tag: v1.2.0
-    repo_url: https://github.com/playsthisgame/skills/agentic-spec-dev
-    subdir: ""
+    repo_url: https://github.com/playsthisgame/melon-index
+    subdir: "skills/video-to-gif"
     entrypoint: SKILL.md
     tree_hash: "sha256:abc123..."
     files:
