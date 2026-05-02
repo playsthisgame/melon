@@ -31,6 +31,7 @@ const (
 	stepName initStep = iota
 	stepDescription
 	stepAgents
+	stepVendor
 	stepDone
 )
 
@@ -76,6 +77,7 @@ type initResult struct {
 	name        string
 	description string
 	agentNames  []string
+	vendor      bool // true = commit deps (default); false = auto-manage .gitignore
 }
 
 // ── initModel ─────────────────────────────────────────────────────────────────
@@ -84,6 +86,7 @@ type initModel struct {
 	step        initStep
 	nameInput   textinput.Model
 	descInput   textinput.Model
+	vendorInput textinput.Model
 	agentList   list.Model
 	agentSel    map[int]bool
 	defaultName string
@@ -100,6 +103,11 @@ func newInitModel(defaultName string) initModel {
 	// Description input
 	di := textinput.New()
 	di.Placeholder = "Short description (optional)"
+
+	// Vendor input
+	vi := textinput.New()
+	vi.Placeholder = "Y/n"
+	vi.CharLimit = 1
 
 	// Agent list — sorted alphabetically
 	known := agents.KnownAgents()
@@ -119,6 +127,7 @@ func newInitModel(defaultName string) initModel {
 		step:        stepName,
 		nameInput:   ni,
 		descInput:   di,
+		vendorInput: vi,
 		agentList:   al,
 		agentSel:    agentSel,
 		defaultName: defaultName,
@@ -180,6 +189,14 @@ func (m initModel) advance() (tea.Model, tea.Cmd) {
 			}
 		}
 		m.result.agentNames = selected
+		m.step = stepVendor
+		m.vendorInput.Focus()
+		return m, textinput.Blink
+
+	case stepVendor:
+		val := strings.TrimSpace(m.vendorInput.Value())
+		// Default is yes (vendor = true); only "n" or "N" opts out.
+		m.result.vendor = !strings.EqualFold(val, "n")
 		m.step = stepDone
 		m.quitting = true
 		return m, tea.Quit
@@ -196,6 +213,8 @@ func (m initModel) updateCurrentStep(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.descInput, cmd = m.descInput.Update(msg)
 	case stepAgents:
 		m.agentList, cmd = m.agentList.Update(msg)
+	case stepVendor:
+		m.vendorInput, cmd = m.vendorInput.Update(msg)
 	}
 	return m, cmd
 }
@@ -221,6 +240,12 @@ func (m initModel) View() string {
 		b.WriteString(titleStyle.Render("AI tools") + "\n")
 		b.WriteString(m.agentList.View() + "\n")
 		b.WriteString(hintStyle.Render("↑↓ navigate  space to toggle  enter to confirm") + "\n")
+
+	case stepVendor:
+		b.WriteString(titleStyle.Render("Vendor skills in git?") + "\n")
+		b.WriteString(hintStyle.Render("Skills will be committed to your repo; disable to auto-manage .gitignore instead.") + "\n")
+		b.WriteString(m.vendorInput.View() + " [Y/n]\n")
+		b.WriteString(hintStyle.Render("enter to confirm") + "\n")
 	}
 
 	return b.String()

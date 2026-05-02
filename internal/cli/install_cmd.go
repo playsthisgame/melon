@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/playsthisgame/melon/internal/agents"
 	"github.com/playsthisgame/melon/internal/fetcher"
+	"github.com/playsthisgame/melon/internal/gitignore"
 	"github.com/playsthisgame/melon/internal/lockfile"
 	"github.com/playsthisgame/melon/internal/manifest"
 	"github.com/playsthisgame/melon/internal/placer"
@@ -184,7 +187,59 @@ func runInstall(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Sync .gitignore when vendor: false.
+	if !m.IsVendored() {
+		gitignorePath := filepath.Join(dir, ".gitignore")
+		entries := managedGitignoreEntries(resolved, m, dir)
+		added, err := gitignore.EnsureEntries(gitignorePath, entries)
+		if err != nil {
+			return fmt.Errorf("install: update .gitignore: %w", err)
+		}
+		if len(added) > 0 {
+			fmt.Fprintln(cmd.OutOrStdout(), "  updated .gitignore with melon-managed paths")
+			fmt.Fprintln(cmd.OutOrStdout(), "  Tip: run `git rm --cached <path>` to stop tracking previously committed files")
+		}
+	}
+
 	return nil
+}
+
+// gitignoreSymlinkEntries returns the .gitignore paths for a single skill name
+// across all target base directories derived from the manifest.
+func gitignoreSymlinkEntries(skillName string, m manifest.Manifest) []string {
+	var targetBases []string
+	if len(m.Outputs) > 0 {
+		for base := range m.Outputs {
+			targetBases = append(targetBases, base)
+		}
+	} else {
+		bases, err := agents.DeriveTargets(m.ToolCompat)
+		if err == nil {
+			targetBases = bases
+		}
+		if len(targetBases) == 0 {
+			targetBases = []string{".agents/skills/"}
+		}
+	}
+	entries := make([]string, 0, len(targetBases))
+	for _, base := range targetBases {
+		entries = append(entries, strings.TrimSuffix(base, "/")+"/"+skillName)
+	}
+	return entries
+}
+
+// managedGitignoreEntries returns the list of .gitignore entries melon should
+// maintain when vendor: false — the .melon/ cache dir plus every managed symlink path.
+func managedGitignoreEntries(resolved []resolver.ResolvedDep, m manifest.Manifest, projectDir string) []string {
+	entries := []string{store.StoreDir + "/"}
+	for _, dep := range resolved {
+		skillName := dep.Name
+		if idx := strings.LastIndex(dep.Name, "/"); idx >= 0 {
+			skillName = dep.Name[idx+1:]
+		}
+		entries = append(entries, gitignoreSymlinkEntries(skillName, m)...)
+	}
+	return entries
 }
 
 func fetchDeps(resolved []resolver.ResolvedDep, dir string, onFetch func(i int, name string, err error)) ([]lockfile.LockedDep, error) {
@@ -203,7 +258,7 @@ func fetchDeps(resolved []resolver.ResolvedDep, dir string, onFetch func(i int, 
 			defer func() { <-sem }()
 
 			installDir := store.InstalledPath(dir, dep)
-			result, err := fetcher.Fetch(dep, installDir)
+			result, err := fetchFn(dep, installDir)
 			onFetch(i, fmt.Sprintf("%s@%s", dep.Name, dep.Version), err)
 			if err != nil {
 				errs[i] = fmt.Errorf("install: fetch %s: %w", dep.Name, err)

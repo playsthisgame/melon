@@ -103,6 +103,54 @@ tool_compat:
 	assert.Nil(t, m2.Outputs)
 }
 
+func TestVendor_DefaultIsVendored(t *testing.T) {
+	// Absent vendor field → IsVendored() == true
+	m := manifest.Manifest{Name: "x", Version: "0.1.0"}
+	assert.True(t, m.IsVendored(), "nil Vendor should be vendored")
+
+	// Explicit true → IsVendored() == true
+	v := true
+	m.Vendor = &v
+	assert.True(t, m.IsVendored())
+
+	// Explicit false → IsVendored() == false
+	f := false
+	m.Vendor = &f
+	assert.False(t, m.IsVendored())
+}
+
+func TestVendor_RoundTrip(t *testing.T) {
+	f := false
+	m := manifest.Manifest{Name: "x", Version: "0.1.0", Vendor: &f}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "melon.yaml")
+	require.NoError(t, manifest.Save(m, path))
+
+	loaded, err := manifest.Load(path)
+	require.NoError(t, err)
+	require.NotNil(t, loaded.Vendor)
+	assert.False(t, *loaded.Vendor)
+	assert.False(t, loaded.IsVendored())
+}
+
+func TestVendor_AbsentFieldRoundTrip(t *testing.T) {
+	// When vendor is nil, saving should not emit a vendor key.
+	m := manifest.Manifest{Name: "x", Version: "0.1.0"}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "melon.yaml")
+	require.NoError(t, manifest.Save(m, path))
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "vendor:", "absent vendor field must not be serialized")
+
+	loaded, err := manifest.Load(path)
+	require.NoError(t, err)
+	assert.Nil(t, loaded.Vendor)
+	assert.True(t, loaded.IsVendored())
+}
+
 func TestRoundTrip_EmptyOptionalFields(t *testing.T) {
 	m := manifest.Manifest{
 		Name:       "minimal",

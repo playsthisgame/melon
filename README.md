@@ -98,11 +98,15 @@ Melon resolves each dependency, fetches it via sparse git checkout, writes `melo
 ```
 melon.yaml          — declares your dependencies and target AI tools    ← commit
 melon.lock         — pins exact versions, git tags, and content hashes ← commit
-.melon/            — local cache; one directory per dep@version        ← commit
-.claude/skills/    — symlinks into .melon/ created by melon install      ← commit
+.melon/            — local cache; one directory per dep@version
+.claude/skills/    — symlinks into .melon/ created by melon install
 ```
 
 Skills are fetched once into `.melon/` and symlinked into the configured tools directories.
+
+### Vendoring vs. gitignore management
+
+By default (`vendor: true`, the implicit setting), `.melon/` and the generated symlinks are committed to your repo — anyone who clones gets the skills without running `melon install`. If you prefer to keep deps out of git, set `vendor: false` in `melon.yaml` (or opt out during `melon init`). Melon will automatically maintain a `.gitignore` block for `.melon/` and all managed symlink paths, keeping it in sync as you add or remove dependencies.
 
 ## Manifest Reference
 
@@ -131,6 +135,11 @@ tool_compat:
 # outputs is optional. Use it to override the automatic placement paths.
 # outputs:
 #   .claude/skills/: "*"
+
+# vendor controls whether melon manages .gitignore for its cache and symlinks.
+# true (default): .melon/ and skill symlinks are committed to your repo.
+# false: melon auto-manages .gitignore — add/remove keeps it in sync.
+# vendor: false
 
 tags: []
 ```
@@ -295,7 +304,7 @@ As AI coding assistants become more capable, teams are building and sharing libr
 
 **Skills are versioned, not just copied.** Melon pins exact versions, git tags, and SHA-256 content hashes in `melon.lock`. If a skill author publishes a breaking change, your team won't silently pick it up, you'll see the diff in the lock file and upgrade intentionally. This means you can trust that the skill running in CI today is the same one that ran last week.
 
-**It works naturally with CI.** Run `melon install --frozen` in your pipeline to fail fast if the lock file is out of sync with the manifest. No surprises, no drift. Because `.melon/` and the generated symlinks are committed to the repo, CI doesn't even need network access to place skills, everything is already there.
+**It works naturally with CI.** Run `melon install --frozen` in your pipeline to fail fast if the lock file is out of sync with the manifest. No surprises, no drift. With the default `vendor: true` setting, `.melon/` and the generated symlinks are committed to the repo so CI doesn't even need network access — everything is already there. If you prefer to keep deps out of git, set `vendor: false` and CI will fetch them fresh on each run using the pinned versions in `melon.lock`.
 
 **Works across your whole team and all your tools.** List the AI tools your project uses under `tool_compat` and melon places each skill into every agent's expected directory at once. One manifest, one install command, every agent ready to go.
 

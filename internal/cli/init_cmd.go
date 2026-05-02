@@ -58,10 +58,12 @@ func runInit(cmd *cobra.Command, args []string) error {
 	var name, description string
 	var agentNames []string
 
+	var vendor bool
 	if flagYes || !isTTY() {
 		name = prompt(cmd, "Project name?", defaultName)
 		description = prompt(cmd, "Short description?", "")
 		agentNames = promptMultiChoice(cmd, "AI tools?", agents.KnownAgents(), []string{})
+		vendor = promptVendor(cmd)
 	} else {
 		model := newInitModel(defaultName)
 		p := tea.NewProgram(model)
@@ -77,10 +79,11 @@ func runInit(cmd *cobra.Command, args []string) error {
 		name = result.name
 		description = result.description
 		agentNames = result.agentNames
+		vendor = result.vendor
 	}
 
 	// Write melon.yaml with inline comments.
-	content := generateManifestYAML(name, description, agentNames)
+	content := generateManifestYAML(name, description, agentNames, vendor)
 	if err := os.WriteFile(manifestPath, []byte(content), 0644); err != nil {
 		return fmt.Errorf("init: write melon.yaml: %w", err)
 	}
@@ -171,11 +174,24 @@ func readLine(r io.Reader) string {
 	return ""
 }
 
+// promptVendor asks whether the user wants to vendor skills in git.
+// Default is yes (vendor = true); only "n"/"N" opts out.
+// In --yes mode it returns true immediately.
+func promptVendor(cmd *cobra.Command) bool {
+	if flagYes {
+		return true
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "Vendor skills in git? Skills will be committed to your repo; disable to auto-manage .gitignore instead. [Y/n] ")
+	answer := strings.TrimSpace(readLine(cmd.InOrStdin()))
+	return !strings.EqualFold(answer, "n")
+}
+
 // generateManifestYAML produces a fully commented melon.yaml string.
 // The outputs block is intentionally omitted — mln install derives output paths
 // automatically from tool_compat using the agent_directory_conventions table.
 // Users can add an explicit outputs block to override the derived paths.
-func generateManifestYAML(name, description string, agentNames []string) string {
+// When vendor is false, a vendor: false line is emitted.
+func generateManifestYAML(name, description string, agentNames []string, vendor bool) string {
 	escapedDesc := strings.ReplaceAll(description, `"`, `\"`)
 
 	var toolCompatBlock string
@@ -188,6 +204,11 @@ func generateManifestYAML(name, description string, agentNames []string) string 
 			lines = append(lines, "  - "+a)
 		}
 		toolCompatBlock = strings.Join(lines, "\n")
+	}
+
+	vendorBlock := ""
+	if !vendor {
+		vendorBlock = "\n# vendor: false tells melon to manage .gitignore for its cache and skill symlinks.\nvendor: false"
 	}
 
 	return fmt.Sprintf(`# melon.yaml — melon package manifest
@@ -222,8 +243,8 @@ dependencies: {}
 # outputs:
 #   .claude/skills/: "*"
 #   .windsurf/skills/: "alice/pdf-skill"
-
+%s
 
 tags: []
-`, name, "0.1.0", escapedDesc, toolCompatBlock)
+`, name, "0.1.0", escapedDesc, toolCompatBlock, vendorBlock)
 }
