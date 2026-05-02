@@ -36,7 +36,6 @@ internal/store/           — .melon/ cache directory management
 internal/agents/          — hardcoded agent → skill directory conventions table
 internal/index/           — melon-index.yaml search (curated skill registry)
 internal/github/          — thin GitHub REST API client
-internal/compiler/        — WIP: markdown assembly (not yet implemented)
 pkg/semver/               — semver constraint checking (^, ~, exact)
 openspec/                 — BDD-style specs and archived change proposals
 ```
@@ -67,7 +66,6 @@ openspec/                 — BDD-style specs and archived change proposals
 - **Git required at runtime:** Fetcher shells out to `git` via `exec.Command`. Modern git with sparse-checkout support is needed.
 - **`GITHUB_TOKEN`** env var: Used by the resolver and GitHub client for higher API rate limits. Not required but recommended.
 - **Agent conventions** are hardcoded in `internal/agents/agents.go`. Adding a new AI tool means adding an entry there.
-- **`compiler/`** is a stub and not yet implemented. Don't expect it to do anything.
 
 ## melon.yaml Schema
 
