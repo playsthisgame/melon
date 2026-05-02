@@ -16,8 +16,11 @@ npm/packages/**/*.tgz
 *.test
 *.out
 
-# melon cache — do NOT ignore melon.lock or agent skill dirs
+# melon cache and managed symlinks
 .melon/
+.claude/skills/golang-pro
+.claude/skills/golang-testing
+.claude/skills/improve-codebase-architecture
 
 # macOS
 .DS_Store
@@ -26,3 +29,6 @@ npm/packages/**/*.tgz
 .idea/
 .vscode/
 *.swp
+
+# Benchmark
+/benchmark/

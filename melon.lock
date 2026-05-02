@@ -1,4 +1,4 @@
-generated_at: "2026-04-30T02:28:42Z"
+generated_at: "2026-05-02T03:43:25Z"
 dependencies:
     - name: github.com/affaan-m/everything-claude-code/skills/golang-testing
       version: 1.10.0
@@ -9,18 +9,9 @@ dependencies:
       tree_hash: sha256:dcc504f6a3407892005823013d91c9232700d721ed515d9c499419b6e4dc2351
       files:
         - SKILL.md
-    - name: github.com/forrestchang/andrej-karpathy-skills/skills/karpathy-guidelines
-      version: 2c606141936f
-      git_tag: main
-      repo_url: https://github.com/forrestchang/andrej-karpathy-skills
-      subdir: skills/karpathy-guidelines
-      entrypoint: SKILL.md
-      tree_hash: sha256:f5aae241719faa46f218a6eff19f61538d41cc5708f91f780a46f6bfcf3fdf2d
-      files:
-        - SKILL.md
     - name: github.com/jeffallan/claude-skills/skills/golang-pro
-      version: 0.4.13
-      git_tag: v0.4.13
+      version: 0.4.14
+      git_tag: v0.4.14
       repo_url: https://github.com/jeffallan/claude-skills
       subdir: skills/golang-pro
       entrypoint: SKILL.md
@@ -32,3 +23,15 @@ dependencies:
         - references/interfaces.md
         - references/project-structure.md
         - references/testing.md
+    - name: github.com/mattpocock/skills/skills/engineering/improve-codebase-architecture
+      version: b843cb5ea74b
+      git_tag: main
+      repo_url: https://github.com/mattpocock/skills
+      subdir: skills/engineering/improve-codebase-architecture
+      entrypoint: SKILL.md
+      tree_hash: sha256:390676b3f66ca0791567c39135c9eec3a651474d54b3ee78f50d70ffe4c985f0
+      files:
+        - DEEPENING.md
+        - INTERFACE-DESIGN.md
+        - LANGUAGE.md
+        - SKILL.md
