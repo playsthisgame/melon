@@ -4,7 +4,7 @@ description: A dependency manager for agentic markdown
 entrypoint: ""
 dependencies:
     github.com/affaan-m/everything-claude-code/skills/golang-testing: ^1.10.0
-    github.com/forrestchang/andrej-karpathy-skills/skills/karpathy-guidelines: main
     github.com/jeffallan/claude-skills/skills/golang-pro: ^0.4.11
+    github.com/mattpocock/skills/skills/engineering/improve-codebase-architecture: main
 tool_compat:
     - claude-code
