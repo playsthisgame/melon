@@ -1,3 +1,5 @@
+## MODIFIED Requirements
+
 ### Requirement: mln add resolves and pins the latest compatible version when none is given
 When the user runs `mln add <dep>` with no version constraint, the `add` command SHALL call `LatestTag` to find the latest semver tag for the dependency and add it to `mln.yaml` with a caret (`^`) constraint pinned to that version.
 
@@ -17,7 +19,6 @@ After writing the updated `mln.yaml`, `mln add` SHALL run the full install pipel
 - **THEN** the skill directory SHALL be present in each agent directory derived from `agent_compat`, and `mln.lock` SHALL contain an entry for `alice/pdf-skill`
 
 #### Scenario: New dep symlink path added to .gitignore when vendor is false
-
 - **WHEN** `vendor: false` and the user runs `mln add alice/pdf-skill`
 - **THEN** `.gitignore` SHALL contain an entry for the symlink path of `pdf-skill` after the command completes
 

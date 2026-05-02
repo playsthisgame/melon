@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/playsthisgame/melon/internal/fetcher"
@@ -14,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 // TestRunInstall_UpdatedDep_OldVersionRemovedFromStore verifies that when a dep
@@ -167,4 +169,104 @@ func TestRunInstall_FetchError_PreservesLockAndStore(t *testing.T) {
 	// Existing store entry must not have been deleted.
 	_, statErr := os.Stat(skillAStore)
 	assert.NoError(t, statErr, "store entry must survive a failed install")
+}
+
+// TestRunInstall_VendorFalse_SyncsGitignore verifies that when vendor: false,
+// install writes .melon/ and managed symlink paths to .gitignore.
+func TestRunInstall_VendorFalse_SyncsGitignore(t *testing.T) {
+	dir := t.TempDir()
+
+	vendorFalse := false
+	m := manifest.Manifest{
+		Name:         "test-project",
+		Version:      "0.1.0",
+		ToolCompat:   []string{"claude-code"},
+		Dependencies: map[string]string{"github.com/alice/skills/skill-a": "^1.0.0"},
+		Vendor:       &vendorFalse,
+	}
+	data, err := yaml.Marshal(m)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "melon.yaml"), data, 0644))
+
+	orig := struct {
+		resolveVersion func(string, string) (string, string, error)
+		fetchManifest  func(string, string, string) (manifest.Manifest, error)
+		fetch          func(resolver.ResolvedDep, string) (fetcher.FetchResult, error)
+	}{resolveVersionFn, fetchManifestFn, fetchFn}
+	t.Cleanup(func() {
+		resolveVersionFn = orig.resolveVersion
+		fetchManifestFn = orig.fetchManifest
+		fetchFn = orig.fetch
+	})
+
+	resolveVersionFn = func(repoURL, constraint string) (string, string, error) {
+		return "1.0.0", "v1.0.0", nil
+	}
+	fetchManifestFn = func(repoURL, gitTag, subdir string) (manifest.Manifest, error) {
+		return manifest.Manifest{}, nil
+	}
+	fetchFn = func(dep resolver.ResolvedDep, installDir string) (fetcher.FetchResult, error) {
+		require.NoError(t, os.MkdirAll(installDir, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(installDir, "SKILL.md"), []byte("# skill"), 0644))
+		return fetcher.FetchResult{TreeHash: "sha256:abc", Files: []string{"SKILL.md"}}, nil
+	}
+
+	origDir := flagDir
+	t.Cleanup(func() { flagDir = origDir })
+	flagDir = dir
+
+	cmd := &cobra.Command{}
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	require.NoError(t, runInstall(cmd, nil))
+
+	gitignorePath := filepath.Join(dir, ".gitignore")
+	data, err = os.ReadFile(gitignorePath)
+	require.NoError(t, err, ".gitignore should have been created")
+	content := string(data)
+
+	assert.True(t, strings.Contains(content, ".melon/"), ".gitignore should contain .melon/")
+	assert.True(t, strings.Contains(content, ".claude/skills/skill-a"), ".gitignore should contain the skill symlink path")
+	assert.True(t, strings.Contains(content, "melon managed"), ".gitignore should contain the melon comment header")
+}
+
+// TestRunInstall_VendorTrue_DoesNotTouchGitignore verifies that when vendor: true
+// (or absent), install never writes to .gitignore.
+func TestRunInstall_VendorTrue_DoesNotTouchGitignore(t *testing.T) {
+	dir := t.TempDir()
+
+	writeManifest(t, dir, map[string]string{"github.com/alice/skills/skill-a": "^1.0.0"})
+
+	orig := struct {
+		resolveVersion func(string, string) (string, string, error)
+		fetchManifest  func(string, string, string) (manifest.Manifest, error)
+		fetch          func(resolver.ResolvedDep, string) (fetcher.FetchResult, error)
+	}{resolveVersionFn, fetchManifestFn, fetchFn}
+	t.Cleanup(func() {
+		resolveVersionFn = orig.resolveVersion
+		fetchManifestFn = orig.fetchManifest
+		fetchFn = orig.fetch
+	})
+
+	resolveVersionFn = func(repoURL, constraint string) (string, string, error) { return "1.0.0", "v1.0.0", nil }
+	fetchManifestFn = func(repoURL, gitTag, subdir string) (manifest.Manifest, error) { return manifest.Manifest{}, nil }
+	fetchFn = func(dep resolver.ResolvedDep, installDir string) (fetcher.FetchResult, error) {
+		require.NoError(t, os.MkdirAll(installDir, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(installDir, "SKILL.md"), []byte("# skill"), 0644))
+		return fetcher.FetchResult{TreeHash: "sha256:abc", Files: []string{"SKILL.md"}}, nil
+	}
+
+	origDir := flagDir
+	t.Cleanup(func() { flagDir = origDir })
+	flagDir = dir
+
+	cmd := &cobra.Command{}
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	require.NoError(t, runInstall(cmd, nil))
+
+	_, err := os.Stat(filepath.Join(dir, ".gitignore"))
+	assert.True(t, os.IsNotExist(err), ".gitignore must not be created when vendor: true")
 }

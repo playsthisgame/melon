@@ -1,4 +1,4 @@
-generated_at: "2026-05-02T03:43:25Z"
+generated_at: "2026-05-02T12:27:38Z"
 dependencies:
     - name: github.com/affaan-m/everything-claude-code/skills/golang-testing
       version: 1.10.0

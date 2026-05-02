@@ -89,7 +89,7 @@ func TestGenerateManifestYAML_ParsesCleanly(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			yaml := generateManifestYAML(tc.name, tc.desc, tc.agentNames)
+			yaml := generateManifestYAML(tc.name, tc.desc, tc.agentNames, true)
 
 			dir := t.TempDir()
 			path := filepath.Join(dir, "melon.yaml")
@@ -107,4 +107,24 @@ func TestGenerateManifestYAML_ParsesCleanly(t *testing.T) {
 			assert.Nil(t, m.Outputs)
 		})
 	}
+}
+
+func TestGenerateManifestYAML_VendorFalse(t *testing.T) {
+	yaml := generateManifestYAML("my-agent", "", []string{"claude-code"}, false)
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "melon.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(yaml), 0644))
+
+	m, err := manifest.Load(path)
+	require.NoError(t, err)
+	require.NotNil(t, m.Vendor, "vendor field should be set when vendor=false")
+	assert.False(t, *m.Vendor)
+	assert.False(t, m.IsVendored())
+	assert.Contains(t, yaml, "vendor: false")
+}
+
+func TestGenerateManifestYAML_VendorTrue_OmitsField(t *testing.T) {
+	yaml := generateManifestYAML("my-agent", "", []string{"claude-code"}, true)
+	assert.NotContains(t, yaml, "vendor:", "vendor field should be absent when vendor=true")
 }

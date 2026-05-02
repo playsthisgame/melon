@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/playsthisgame/melon/internal/fetcher"
 	"github.com/playsthisgame/melon/internal/manifest"
+	"github.com/playsthisgame/melon/internal/resolver"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -159,6 +161,138 @@ func TestRunRemove_NoArgNonTTYReturnsError(t *testing.T) {
 	err := runRemove(removeCmd, []string{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "non-interactive mode")
+}
+
+// TestRunRemove_VendorFalse_RemovesGitignoreEntry_LastDep verifies gitignore
+// cleanup when removing the only remaining dependency.
+func TestRunRemove_VendorFalse_RemovesGitignoreEntry_LastDep(t *testing.T) {
+	dir := t.TempDir()
+
+	vendorFalse := false
+	m := manifest.Manifest{
+		Name:       "test-project",
+		Version:    "0.1.0",
+		ToolCompat: []string{"claude-code"},
+		Dependencies: map[string]string{
+			"github.com/alice/skills/skill-a": "^1.0.0",
+		},
+		Vendor: &vendorFalse,
+	}
+	data, err := yaml.Marshal(m)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "melon.yaml"), data, 0644))
+
+	// Pre-populate .gitignore with the entry that should be removed.
+	gitignoreContent := ".melon/\n# melon managed — do not edit this block\n.claude/skills/skill-a\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(gitignoreContent), 0644))
+
+	orig := struct {
+		resolveVersion func(string, string) (string, string, error)
+		fetchManifest  func(string, string, string) (manifest.Manifest, error)
+		fetch          func(resolver.ResolvedDep, string) (fetcher.FetchResult, error)
+	}{resolveVersionFn, fetchManifestFn, fetchFn}
+	t.Cleanup(func() {
+		resolveVersionFn = orig.resolveVersion
+		fetchManifestFn = orig.fetchManifest
+		fetchFn = orig.fetch
+	})
+
+	resolveVersionFn = func(repoURL, constraint string) (string, string, error) { return "1.0.0", "v1.0.0", nil }
+	fetchManifestFn = func(repoURL, gitTag, subdir string) (manifest.Manifest, error) { return manifest.Manifest{}, nil }
+	fetchFn = func(dep resolver.ResolvedDep, installDir string) (fetcher.FetchResult, error) {
+		require.NoError(t, os.MkdirAll(installDir, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(installDir, "SKILL.md"), []byte("# skill"), 0644))
+		return fetcher.FetchResult{TreeHash: "sha256:abc", Files: []string{"SKILL.md"}}, nil
+	}
+
+	origDir := flagDir
+	t.Cleanup(func() { flagDir = origDir })
+	flagDir = dir
+
+	cmd := &cobra.Command{}
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	require.NoError(t, runRemove(cmd, []string{"github.com/alice/skills/skill-a"}))
+
+	gitignoreData, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
+	require.NoError(t, err)
+	assert.NotContains(t, string(gitignoreData), ".claude/skills/skill-a")
+}
+
+// TestRunRemove_VendorFalse_RemovesGitignoreEntry_WithRemainingDeps is the
+// realistic case: removing one skill when others remain. This is where the bug
+// occurred — runInstall runs fully (not early-returning on 0 deps), and the
+// gitignore cleanup must still execute regardless.
+func TestRunRemove_VendorFalse_RemovesGitignoreEntry_WithRemainingDeps(t *testing.T) {
+	dir := t.TempDir()
+
+	vendorFalse := false
+	m := manifest.Manifest{
+		Name:       "test-project",
+		Version:    "0.1.0",
+		ToolCompat: []string{"claude-code"},
+		Dependencies: map[string]string{
+			"github.com/alice/skills/skill-a": "^1.0.0",
+			"github.com/bob/skills/skill-b":   "^2.0.0",
+			"github.com/carol/skills/skill-c": "^3.0.0",
+		},
+		Vendor: &vendorFalse,
+	}
+	data, err := yaml.Marshal(m)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "melon.yaml"), data, 0644))
+
+	// Pre-populate .gitignore simulating a previous melon install with all 3 deps.
+	gitignoreContent := ".melon/\n# melon managed — do not edit this block\n.claude/skills/skill-a\n.claude/skills/skill-b\n.claude/skills/skill-c\n"
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".gitignore"), []byte(gitignoreContent), 0644))
+
+	orig := struct {
+		resolveVersion func(string, string) (string, string, error)
+		fetchManifest  func(string, string, string) (manifest.Manifest, error)
+		fetch          func(resolver.ResolvedDep, string) (fetcher.FetchResult, error)
+	}{resolveVersionFn, fetchManifestFn, fetchFn}
+	t.Cleanup(func() {
+		resolveVersionFn = orig.resolveVersion
+		fetchManifestFn = orig.fetchManifest
+		fetchFn = orig.fetch
+	})
+
+	resolveVersionFn = func(repoURL, constraint string) (string, string, error) {
+		switch repoURL {
+		case "https://github.com/bob/skills":
+			return "2.0.0", "v2.0.0", nil
+		case "https://github.com/carol/skills":
+			return "3.0.0", "v3.0.0", nil
+		}
+		return "1.0.0", "v1.0.0", nil
+	}
+	fetchManifestFn = func(repoURL, gitTag, subdir string) (manifest.Manifest, error) { return manifest.Manifest{}, nil }
+	fetchFn = func(dep resolver.ResolvedDep, installDir string) (fetcher.FetchResult, error) {
+		require.NoError(t, os.MkdirAll(installDir, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(installDir, "SKILL.md"), []byte("# skill"), 0644))
+		return fetcher.FetchResult{TreeHash: "sha256:abc", Files: []string{"SKILL.md"}}, nil
+	}
+
+	origDir := flagDir
+	t.Cleanup(func() { flagDir = origDir })
+	flagDir = dir
+
+	cmd := &cobra.Command{}
+	var buf bytes.Buffer
+	cmd.SetOut(&buf)
+
+	require.NoError(t, runRemove(cmd, []string{"github.com/alice/skills/skill-a"}))
+
+	gitignoreData, err := os.ReadFile(filepath.Join(dir, ".gitignore"))
+	require.NoError(t, err)
+	content := string(gitignoreData)
+
+	// Removed skill must be gone.
+	assert.NotContains(t, content, ".claude/skills/skill-a", "removed skill must be removed from .gitignore")
+	// Remaining skills must still be present.
+	assert.Contains(t, content, ".claude/skills/skill-b", "remaining skills must stay in .gitignore")
+	assert.Contains(t, content, ".claude/skills/skill-c", "remaining skills must stay in .gitignore")
 }
 
 // --- empty melon.yaml no-args test (5.3) ---

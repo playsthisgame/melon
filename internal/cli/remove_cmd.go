@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/playsthisgame/melon/internal/gitignore"
 	"github.com/playsthisgame/melon/internal/manifest"
 	"github.com/spf13/cobra"
 )
@@ -40,6 +42,20 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Removed %s from melon.yaml\n", name)
+
+	// When vendor: false, remove the stale symlink path(s) from .gitignore now,
+	// before running install. This must happen regardless of whether install
+	// succeeds, and must not depend on the install pipeline's TTY spinner path.
+	if !m.IsVendored() {
+		skillName := name
+		if idx := strings.LastIndex(name, "/"); idx >= 0 {
+			skillName = name[idx+1:]
+		}
+		entries := gitignoreSymlinkEntries(skillName, m)
+		if removeErr := gitignore.RemoveEntries(filepath.Join(dir, ".gitignore"), entries); removeErr != nil {
+			return fmt.Errorf("remove: update .gitignore: %w", removeErr)
+		}
+	}
 
 	// Run the full install pipeline — this regenerates melon.lock and prunes
 	// the removed dep's agent symlink and .melon/ cache entry.
@@ -123,6 +139,22 @@ func offerRemoveMany(cmd *cobra.Command, names []string) error {
 
 	if err := manifest.Save(m, manifestPath); err != nil {
 		return fmt.Errorf("remove: save melon.yaml: %w", err)
+	}
+
+	// When vendor: false, remove the stale symlink path(s) from .gitignore
+	// before running install, for the same reason as in runRemove.
+	if !m.IsVendored() {
+		var entries []string
+		for _, n := range names {
+			skillName := n
+			if idx := strings.LastIndex(n, "/"); idx >= 0 {
+				skillName = n[idx+1:]
+			}
+			entries = append(entries, gitignoreSymlinkEntries(skillName, m)...)
+		}
+		if removeErr := gitignore.RemoveEntries(filepath.Join(dir, ".gitignore"), entries); removeErr != nil {
+			return fmt.Errorf("remove: update .gitignore: %w", removeErr)
+		}
 	}
 
 	return withSpinner("Updating…", func() error {
