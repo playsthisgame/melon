@@ -10,12 +10,17 @@ import (
 
 const StoreDir = ".melon"
 
-// dirName converts a ResolvedDep into the directory name used inside .melon/.
-// Slashes in the dep name are replaced with dashes.
-// e.g. "github.com/alice/xlsx-skill" at "1.2.0" -> "github.com-alice-xlsx-skill@1.2.0"
+// DirName returns the directory name used inside .melon/ for a dep with the
+// given name and version. Slashes in name are replaced with dashes.
+// e.g. DirName("github.com/alice/xlsx-skill", "1.2.0") -> "github.com-alice-xlsx-skill@1.2.0"
+func DirName(name, version string) string {
+	safeName := strings.ReplaceAll(name, "/", "-")
+	return safeName + "@" + version
+}
+
+// dirName is a convenience wrapper used internally.
 func dirName(dep resolver.ResolvedDep) string {
-	safeName := strings.ReplaceAll(dep.Name, "/", "-")
-	return safeName + "@" + dep.Version
+	return DirName(dep.Name, dep.Version)
 }
 
 // InstalledPath returns the absolute path to dep's installed directory inside .melon/.
