@@ -26,11 +26,33 @@ var searchCmd = &cobra.Command{
 func runSearch(cmd *cobra.Command, args []string) error {
 	term := args[0]
 
-	// 1. Try the curated index first.
+	// 1. Resolve which index URLs to query based on optional melon.yaml config.
+	urls := resolveIndexURLs()
+
+	// 2. Fetch and merge entries across all active index URLs.
+	// Custom index results come first; public index entries with duplicate names
+	// are suppressed.
+	seen := make(map[string]struct{})
+	var allEntries []index.Entry
+	var lastErr error
+	for _, u := range urls {
+		entries, err := index.Fetch(u)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		for _, e := range entries {
+			if _, dup := seen[e.Name]; !dup {
+				seen[e.Name] = struct{}{}
+				allEntries = append(allEntries, e)
+			}
+		}
+	}
+
+	// 3. Search across merged entries.
 	var items []searchResultItem
-	entries, indexErr := index.Fetch()
-	if indexErr == nil {
-		matched := index.Search(entries, term)
+	if len(allEntries) > 0 {
+		matched := index.Search(allEntries, term)
 		for _, e := range matched {
 			items = append(items, searchResultItem{
 				path:        e.Name,
@@ -41,38 +63,10 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// TODO: Fall back to GitHub Topics when the community grows. Disabled for now
-	// because topic search returns repos rather than skill subdirectories — a
-	// multi-skill repo like melon-index would surface as the repo root instead of
-	// its individual skills. Revisit once a skill-manifest convention is in place.
-	//
-	// if len(items) == 0 {
-	// 	if indexErr != nil {
-	// 		fmt.Fprintf(cmd.OutOrStdout(), "warning: could not load curated index (%v)\n", indexErr)
-	// 		fmt.Fprintf(cmd.OutOrStdout(), "         (expected: %s)\n", index.IndexURL)
-	// 	}
-	// 	client := gh.New()
-	// 	results, ghErr := client.SearchByTopic(term)
-	// 	if ghErr != nil {
-	// 		if indexErr != nil {
-	// 			return fmt.Errorf("search: index unavailable (%v) and GitHub Topics failed: %w", indexErr, ghErr)
-	// 		}
-	// 		return fmt.Errorf("search: %w", ghErr)
-	// 	}
-	// 	for _, r := range results {
-	// 		items = append(items, searchResultItem{
-	// 			path:        r.Name,
-	// 			author:      r.Owner,
-	// 			description: r.Description,
-	// 		})
-	// 	}
-	// }
-
-	// 2. No results from the curated index.
+	// 4. No results.
 	if len(items) == 0 {
-		if indexErr != nil {
-			fmt.Fprintf(cmd.OutOrStdout(), "warning: could not load curated index (%v)\n", indexErr)
-			fmt.Fprintf(cmd.OutOrStdout(), "         (expected: %s)\n", index.IndexURL)
+		if lastErr != nil {
+			fmt.Fprintf(cmd.OutOrStdout(), "warning: could not load curated index (%v)\n", lastErr)
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "No skills found for %q.\n", term)
 		return nil
@@ -99,6 +93,38 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(cmd.OutOrStdout(), "%s%s\t%s\t%s\n", star, r.path, r.author, r.description)
 	}
 	return nil
+}
+
+// resolveIndexURLs returns the ordered list of index URLs to query, based on
+// the optional index block in melon.yaml. If no manifest is found or no index
+// block is configured, it returns just the default public index.
+func resolveIndexURLs() []string {
+	dir, err := resolveProjectDir()
+	if err != nil {
+		return []string{index.DefaultIndexURL}
+	}
+	m, err := manifest.Load(manifest.FindPath(dir))
+	if err != nil || m.Index == nil || len(m.Index.URLs) == 0 {
+		return []string{index.DefaultIndexURL}
+	}
+	candidates := m.Index.URLs
+	if !m.Index.Exclusive {
+		candidates = append(candidates, index.DefaultIndexURL)
+	}
+	return uniqueURLs(candidates)
+}
+
+// uniqueURLs returns urls with duplicates removed, preserving first-occurrence order.
+func uniqueURLs(urls []string) []string {
+	seen := make(map[string]struct{}, len(urls))
+	out := make([]string, 0, len(urls))
+	for _, u := range urls {
+		if _, ok := seen[u]; !ok {
+			seen[u] = struct{}{}
+			out = append(out, u)
+		}
+	}
+	return out
 }
 
 // runSearchTUI runs the bubbletea search list and returns the selected paths.
