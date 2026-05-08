@@ -26,10 +26,23 @@ func runInfo(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("info: %w", err)
 	}
 
-	// Look up the skill in the curated index for description and author.
+	// Look up the skill across all active indices for description and author.
 	var description, author string
-	entries, _ := index.Fetch()
-	if entry := index.Find(entries, path); entry != nil {
+	seen := make(map[string]struct{})
+	var allEntries []index.Entry
+	for _, u := range resolveIndexURLs() {
+		entries, err := index.Fetch(u)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if _, dup := seen[e.Name]; !dup {
+				seen[e.Name] = struct{}{}
+				allEntries = append(allEntries, e)
+			}
+		}
+	}
+	if entry := index.Find(allEntries, path); entry != nil {
 		description = entry.Description
 		author = entry.Author
 	}

@@ -1,5 +1,14 @@
 package manifest
 
+// IndexConfig holds optional custom index configuration for a project.
+type IndexConfig struct {
+	// URLs is a list of custom index.yaml URLs to search.
+	URLs []string `yaml:"urls,omitempty"`
+	// Exclusive, when true, suppresses the default public melon index so only
+	// the custom URLs are searched.
+	Exclusive bool `yaml:"exclusive,omitempty"`
+}
+
 // Manifest is the parsed representation of a project's melon.yaml.
 type Manifest struct {
 	Name         string            `yaml:"name"`
@@ -16,6 +25,9 @@ type Manifest struct {
 	// When nil or true, melon never touches .gitignore (default: vendor everything).
 	// When false, melon keeps .gitignore in sync across install/add/remove.
 	Vendor *bool `yaml:"vendor,omitempty"`
+	// Index configures a custom skill registry. When absent, the default public
+	// melon index is used.
+	Index *IndexConfig `yaml:"index,omitempty"`
 }
 
 // IsVendored reports whether the manifest is in vendor mode.

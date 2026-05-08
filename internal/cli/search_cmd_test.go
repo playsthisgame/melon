@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/playsthisgame/melon/internal/index"
 	"github.com/playsthisgame/melon/internal/manifest"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -49,6 +50,63 @@ func TestOfferAddMany_EmptyInputProceedsWithInstall(t *testing.T) {
 	m, err := manifest.Load(filepath.Join(tmpDir, "melon.yaml"))
 	require.NoError(t, err)
 	assert.Equal(t, "^1.0.0", m.Dependencies["github.com/owner/skill-a"])
+}
+
+func setFlagDir(t *testing.T, dir string) {
+	t.Helper()
+	orig := flagDir
+	flagDir = dir
+	t.Cleanup(func() { flagDir = orig })
+}
+
+func TestResolveIndexURLs_NoManifest(t *testing.T) {
+	setFlagDir(t, t.TempDir()) // empty dir, no melon.yaml
+	urls := resolveIndexURLs()
+	assert.Equal(t, []string{index.DefaultIndexURL}, urls)
+}
+
+func TestResolveIndexURLs_NoIndexBlock(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "melon.yaml"), []byte("name: x\nversion: 0.1.0\n"), 0644))
+	setFlagDir(t, dir)
+	urls := resolveIndexURLs()
+	assert.Equal(t, []string{index.DefaultIndexURL}, urls)
+}
+
+func TestResolveIndexURLs_CustomAndPublic(t *testing.T) {
+	custom1 := "https://example.com/index.yaml"
+	custom2 := "https://corp.example.com/index.yaml"
+	m := manifest.Manifest{Name: "x", Version: "0.1.0", Index: &manifest.IndexConfig{URLs: []string{custom1, custom2}}}
+	dir := t.TempDir()
+	require.NoError(t, manifest.Save(m, filepath.Join(dir, "melon.yaml")))
+	setFlagDir(t, dir)
+	urls := resolveIndexURLs()
+	assert.Equal(t, []string{custom1, custom2, index.DefaultIndexURL}, urls)
+}
+
+func TestResolveIndexURLs_Exclusive(t *testing.T) {
+	custom1 := "https://example.com/index.yaml"
+	custom2 := "https://corp.example.com/index.yaml"
+	m := manifest.Manifest{Name: "x", Version: "0.1.0", Index: &manifest.IndexConfig{URLs: []string{custom1, custom2}, Exclusive: true}}
+	dir := t.TempDir()
+	require.NoError(t, manifest.Save(m, filepath.Join(dir, "melon.yaml")))
+	setFlagDir(t, dir)
+	urls := resolveIndexURLs()
+	assert.Equal(t, []string{custom1, custom2}, urls)
+}
+
+func TestResolveIndexURLs_DuplicatesRemoved(t *testing.T) {
+	custom := "https://example.com/index.yaml"
+	// custom URL duplicated, and also matches DefaultIndexURL indirectly via a second entry
+	m := manifest.Manifest{Name: "x", Version: "0.1.0", Index: &manifest.IndexConfig{
+		URLs: []string{custom, custom, index.DefaultIndexURL},
+	}}
+	dir := t.TempDir()
+	require.NoError(t, manifest.Save(m, filepath.Join(dir, "melon.yaml")))
+	setFlagDir(t, dir)
+	urls := resolveIndexURLs()
+	// custom appears once, DefaultIndexURL appears once (not duplicated by the append)
+	assert.Equal(t, []string{custom, index.DefaultIndexURL}, urls)
 }
 
 func TestOfferAddMany_NInputCancels(t *testing.T) {

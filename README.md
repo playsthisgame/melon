@@ -141,6 +141,12 @@ tool_compat:
 # false: melon auto-manages .gitignore — add/remove keeps it in sync.
 # vendor: false
 
+# index is optional. Use it to point melon search/info at private registries.
+# index:
+#   urls:
+#     - https://example.com/my-company/skill-registry/raw/main/index.yaml
+#   exclusive: false  # true = suppress the default public melon index entirely, the default value is false
+
 tags: []
 ```
 
@@ -262,6 +268,8 @@ melon search git workflow  # find git workflow skills
 ```
 
 Featured skills appear at the top of results. If nothing matches, melon will tell you and suggest submitting to the index.
+
+If your project has an `index` block in `melon.yaml`, search queries your custom registry instead of (or in addition to) the public melon index. Set `exclusive: true` to see only your private skills.
 
 ### `melon info`
 

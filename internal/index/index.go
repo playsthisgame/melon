@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const IndexURL = "https://raw.githubusercontent.com/playsthisgame/melon-index/main/index.yaml"
+const DefaultIndexURL = "https://raw.githubusercontent.com/playsthisgame/melon-index/main/index.yaml"
 
 // Entry is a single skill record from the melon-index.
 type Entry struct {
@@ -24,9 +24,9 @@ type indexFile struct {
 	Skills []Entry `yaml:"skills"`
 }
 
-// Fetch downloads and parses the melon-index index.yaml.
-func Fetch() ([]Entry, error) {
-	resp, err := http.Get(IndexURL)
+// Fetch downloads and parses the index.yaml at the given URL.
+func Fetch(url string) ([]Entry, error) {
+	resp, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("index: fetch: %w", err)
 	}
