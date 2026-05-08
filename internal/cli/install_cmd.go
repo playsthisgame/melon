@@ -36,7 +36,33 @@ var (
 	fetchFn          = fetcher.Fetch
 )
 
+// runInstall is the cobra handler for `melon install`. It enforces the source
+// policy across all deps before delegating to runInstallCore.
 func runInstall(cmd *cobra.Command, args []string) error {
+	dir, err := resolveProjectDir()
+	if err != nil {
+		return err
+	}
+	m, err := manifest.Load(manifest.FindPath(dir))
+	if err != nil {
+		return fmt.Errorf("install: %w", err)
+	}
+	if len(m.Dependencies) > 0 {
+		depPaths := make([]string, 0, len(m.Dependencies))
+		for name := range m.Dependencies {
+			depPaths = append(depPaths, name)
+		}
+		if err := checkSourcePolicy(m, depPaths); err != nil {
+			return fmt.Errorf("install: %w", err)
+		}
+	}
+	return runInstallCore(cmd, args)
+}
+
+// runInstallCore performs the full install pipeline without a policy check.
+// Called by runInstall (after its policy check) and by melon add / melon search
+// (which have already validated the specific dep being added).
+func runInstallCore(cmd *cobra.Command, args []string) error {
 	dir, err := resolveProjectDir()
 	if err != nil {
 		return err

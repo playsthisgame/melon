@@ -152,6 +152,13 @@ tool_compat:
 #     - https://example.com/index.yaml
 #   public_index: true  # false = suppress the default public melon index, default is true
 
+# policy is optional. Use it to restrict which sources can be installed.
+# Patterns use glob syntax — a trailing * matches any suffix.
+# policy:
+#   allowed_sources:
+#     - github.com/my-company/*       # any repo under this org
+#     - github.com/trusted-partner/*  # another approved org
+
 tags: []
 ```
 
@@ -192,6 +199,8 @@ melon install --frozen    # fail if melon.lock would change (useful in CI)
 melon install --no-place  # fetch and lock only — skip placement into agent dirs
 ```
 
+If a `policy.allowed_sources` block is configured in `melon.yaml`, `melon install` validates all dependencies against the allowlist before fetching anything. Any blocked dependency causes a non-zero exit listing all violations.
+
 ### `melon add`
 
 Add a dependency to `melon.yaml` and run install. If no version is specified, the latest semver tag is resolved automatically.
@@ -201,6 +210,8 @@ melon add github.com/playsthisgame/melon-index/skills/video-to-gif          # re
 melon add github.com/playsthisgame/melon-index/skills/video-to-gif@^1.0.0   # explicit constraint
 melon add github.com/playsthisgame/melon-index/skills/video-to-gif@main     # branch pin
 ```
+
+If a `policy.allowed_sources` block is configured, `melon add` checks the dependency source before writing to `melon.yaml` and exits with an error if the source is not permitted.
 
 ### `melon remove`
 
