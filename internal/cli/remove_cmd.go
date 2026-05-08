@@ -6,9 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/playsthisgame/melon/internal/gitignore"
+	"github.com/playsthisgame/melon/internal/lockfile"
 	"github.com/playsthisgame/melon/internal/manifest"
+	"github.com/playsthisgame/melon/internal/placer"
+	"github.com/playsthisgame/melon/internal/resolver"
+	"github.com/playsthisgame/melon/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -57,11 +62,46 @@ func runRemove(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Run the full install pipeline — this regenerates melon.lock and prunes
-	// the removed dep's agent symlink and .melon/ cache entry.
 	return withSpinner("Updating…", func() error {
-		return runInstall(cmd, args)
+		return removeSingleDep(cmd, dir, m, name)
 	})
+}
+
+// removeSingleDep unplaces, de-stores, and removes a single dep from melon.lock
+// without touching any other installed deps.
+func removeSingleDep(cmd *cobra.Command, dir string, m manifest.Manifest, name string) error {
+	lockPath := filepath.Join(dir, "melon.lock")
+	lf, _ := lockfile.Load(lockPath)
+
+	// Find the locked entry so we can unplace and remove the right version.
+	var found *lockfile.LockedDep
+	remaining := lf.Dependencies[:0]
+	for _, ld := range lf.Dependencies {
+		if ld.Name == name {
+			cp := ld
+			found = &cp
+		} else {
+			remaining = append(remaining, ld)
+		}
+	}
+
+	if found != nil && !flagNoPlace {
+		if err := placer.Unplace([]lockfile.LockedDep{*found}, m, dir, cmd.OutOrStdout()); err != nil {
+			return fmt.Errorf("remove: %w", err)
+		}
+		if err := store.Remove(dir, resolver.ResolvedDep{Name: found.Name, Version: found.Version}); err != nil {
+			return fmt.Errorf("remove: %w", err)
+		}
+	}
+
+	lf.Dependencies = remaining
+	lf.GeneratedAt = time.Now().UTC().Format(time.RFC3339)
+	if err := lockfile.Save(lf, lockPath); err != nil {
+		return fmt.Errorf("remove: write melon.lock: %w", err)
+	}
+
+	fmt.Fprintln(cmd.OutOrStdout(), removeStyle.Render(fmt.Sprintf("  - %s", name)))
+	return nil
 }
 
 // runRemoveInteractive loads melon.yaml, presents a multi-select TUI, and
@@ -158,6 +198,11 @@ func offerRemoveMany(cmd *cobra.Command, names []string) error {
 	}
 
 	return withSpinner("Updating…", func() error {
-		return runInstall(cmd, nil)
+		for _, n := range names {
+			if err := removeSingleDep(cmd, dir, m, n); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }

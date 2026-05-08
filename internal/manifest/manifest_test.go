@@ -187,6 +187,38 @@ func TestIndex_AbsentFieldRoundTrip(t *testing.T) {
 	assert.Nil(t, loaded.Index)
 }
 
+func TestPolicy_RoundTrip(t *testing.T) {
+	m := manifest.Manifest{
+		Name:    "x",
+		Version: "0.1.0",
+		Policy:  &manifest.PolicyConfig{AllowedSources: []string{"github.com/my-company/*", "github.com/trusted/*"}},
+	}
+
+	dir := t.TempDir()
+	path := filepath.Join(dir, "melon.yaml")
+	require.NoError(t, manifest.Save(m, path))
+
+	loaded, err := manifest.Load(path)
+	require.NoError(t, err)
+	require.NotNil(t, loaded.Policy)
+	assert.Equal(t, m.Policy.AllowedSources, loaded.Policy.AllowedSources)
+}
+
+func TestPolicy_AbsentFieldRoundTrip(t *testing.T) {
+	m := manifest.Manifest{Name: "x", Version: "0.1.0"}
+	dir := t.TempDir()
+	path := filepath.Join(dir, "melon.yaml")
+	require.NoError(t, manifest.Save(m, path))
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "policy:", "absent policy field must not be serialized")
+
+	loaded, err := manifest.Load(path)
+	require.NoError(t, err)
+	assert.Nil(t, loaded.Policy)
+}
+
 func TestRoundTrip_EmptyOptionalFields(t *testing.T) {
 	m := manifest.Manifest{
 		Name:       "minimal",

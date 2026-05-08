@@ -16,6 +16,73 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func TestRunAdd_PolicyBlocked_ManifestUnchanged(t *testing.T) {
+	dir := t.TempDir()
+	m := manifest.Manifest{
+		Name:    "test",
+		Version: "0.1.0",
+		Policy:  &manifest.PolicyConfig{AllowedSources: []string{"github.com/my-company/*"}},
+	}
+	require.NoError(t, manifest.Save(m, filepath.Join(dir, "melon.yaml")))
+
+	origDir := flagDir
+	flagDir = dir
+	t.Cleanup(func() { flagDir = origDir })
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	err := runAdd(cmd, []string{"github.com/public/blocked-skill@^1.0.0"})
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "source policy violation")
+	assert.Contains(t, err.Error(), "github.com/public/blocked-skill")
+
+	// melon.yaml must be unchanged — dep must not have been written.
+	loaded, loadErr := manifest.Load(filepath.Join(dir, "melon.yaml"))
+	require.NoError(t, loadErr)
+	assert.Empty(t, loaded.Dependencies)
+}
+
+func TestRunAdd_PolicyPermitted_Proceeds(t *testing.T) {
+	dir := t.TempDir()
+	m := manifest.Manifest{
+		Name:    "test",
+		Version: "0.1.0",
+		Policy:  &manifest.PolicyConfig{AllowedSources: []string{"github.com/my-company/*"}},
+	}
+	require.NoError(t, manifest.Save(m, filepath.Join(dir, "melon.yaml")))
+
+	orig := struct {
+		resolveVersion func(string, string) (string, string, error)
+		fetchManifest  func(string, string, string) (manifest.Manifest, error)
+		fetch          func(resolver.ResolvedDep, string) (fetcher.FetchResult, error)
+	}{resolveVersionFn, fetchManifestFn, fetchFn}
+	t.Cleanup(func() {
+		resolveVersionFn = orig.resolveVersion
+		fetchManifestFn = orig.fetchManifest
+		fetchFn = orig.fetch
+	})
+	resolveVersionFn = func(_, _ string) (string, string, error) { return "1.0.0", "v1.0.0", nil }
+	fetchManifestFn = func(_, _, _ string) (manifest.Manifest, error) { return manifest.Manifest{}, nil }
+	fetchFn = func(dep resolver.ResolvedDep, installDir string) (fetcher.FetchResult, error) {
+		require.NoError(t, os.MkdirAll(installDir, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(installDir, "SKILL.md"), []byte("# skill"), 0644))
+		return fetcher.FetchResult{TreeHash: "sha256:abc", Files: []string{"SKILL.md"}}, nil
+	}
+
+	origDir := flagDir
+	flagDir = dir
+	t.Cleanup(func() { flagDir = origDir })
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	err := runAdd(cmd, []string{"github.com/my-company/approved-skill@^1.0.0"})
+	require.NoError(t, err)
+
+	loaded, loadErr := manifest.Load(filepath.Join(dir, "melon.yaml"))
+	require.NoError(t, loadErr)
+	assert.Equal(t, "^1.0.0", loaded.Dependencies["github.com/my-company/approved-skill"])
+}
+
 // TestRunAdd_VendorFalse_AppendsGitignore verifies that when vendor: false,
 // mln add appends the new skill's symlink path to .gitignore via runInstall.
 func TestRunAdd_VendorFalse_AppendsGitignore(t *testing.T) {

@@ -1,5 +1,13 @@
 package manifest
 
+// PolicyConfig holds optional source restriction policy for a project.
+type PolicyConfig struct {
+	// AllowedSources is a list of glob patterns. Only dependency paths matching
+	// at least one pattern are permitted by melon add and melon install.
+	// When empty or absent, all sources are permitted.
+	AllowedSources []string `yaml:"allowed_sources,omitempty"`
+}
+
 // IndexConfig holds optional custom index configuration for a project.
 type IndexConfig struct {
 	// URLs is a list of custom index.yaml URLs to search.
@@ -28,6 +36,8 @@ type Manifest struct {
 	// Index configures a custom skill registry. When absent, the default public
 	// melon index is used.
 	Index *IndexConfig `yaml:"index,omitempty"`
+	// Policy configures source restrictions. When absent, all sources are permitted.
+	Policy *PolicyConfig `yaml:"policy,omitempty"`
 }
 
 // IsVendored reports whether the manifest is in vendor mode.

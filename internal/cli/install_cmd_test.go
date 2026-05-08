@@ -270,3 +270,87 @@ func TestRunInstall_VendorTrue_DoesNotTouchGitignore(t *testing.T) {
 	_, err := os.Stat(filepath.Join(dir, ".gitignore"))
 	assert.True(t, os.IsNotExist(err), ".gitignore must not be created when vendor: true")
 }
+
+func TestRunInstall_PolicyBlocked_ErrorsBeforeFetch(t *testing.T) {
+	dir := t.TempDir()
+
+	m := manifest.Manifest{
+		Name:    "test",
+		Version: "0.1.0",
+		Dependencies: map[string]string{
+			"github.com/my-company/approved-skill": "^1.0.0",
+			"github.com/public/blocked-skill":      "^1.0.0",
+		},
+		Policy: &manifest.PolicyConfig{AllowedSources: []string{"github.com/my-company/*"}},
+	}
+	data, err := yaml.Marshal(m)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "melon.yaml"), data, 0644))
+
+	var fetchCalled bool
+	origFetch := fetchFn
+	fetchFn = func(_ resolver.ResolvedDep, _ string) (fetcher.FetchResult, error) {
+		fetchCalled = true
+		return fetcher.FetchResult{}, nil
+	}
+	t.Cleanup(func() { fetchFn = origFetch })
+
+	origDir := flagDir
+	flagDir = dir
+	t.Cleanup(func() { flagDir = origDir })
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	err = runInstall(cmd, nil)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "source policy violation")
+	assert.Contains(t, err.Error(), "github.com/public/blocked-skill")
+	assert.False(t, fetchCalled, "fetch must not be called when policy blocks")
+}
+
+func TestRunInstall_PolicyPermitted_Proceeds(t *testing.T) {
+	dir := t.TempDir()
+
+	m := manifest.Manifest{
+		Name:       "test",
+		Version:    "0.1.0",
+		ToolCompat: []string{"claude-code"},
+		Dependencies: map[string]string{
+			"github.com/my-company/approved-skill": "^1.0.0",
+		},
+		Policy: &manifest.PolicyConfig{AllowedSources: []string{"github.com/my-company/*"}},
+	}
+	data, err := yaml.Marshal(m)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "melon.yaml"), data, 0644))
+
+	origFns := struct {
+		resolveVersion func(string, string) (string, string, error)
+		fetchManifest  func(string, string, string) (manifest.Manifest, error)
+		fetch          func(resolver.ResolvedDep, string) (fetcher.FetchResult, error)
+	}{resolveVersionFn, fetchManifestFn, fetchFn}
+	t.Cleanup(func() {
+		resolveVersionFn = origFns.resolveVersion
+		fetchManifestFn = origFns.fetchManifest
+		fetchFn = origFns.fetch
+	})
+	resolveVersionFn = func(_, _ string) (string, string, error) { return "1.0.0", "v1.0.0", nil }
+	fetchManifestFn = func(_, _, _ string) (manifest.Manifest, error) { return manifest.Manifest{}, nil }
+	fetchFn = func(dep resolver.ResolvedDep, installDir string) (fetcher.FetchResult, error) {
+		require.NoError(t, os.MkdirAll(installDir, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(installDir, "SKILL.md"), []byte("# skill"), 0644))
+		return fetcher.FetchResult{TreeHash: "sha256:abc", Files: []string{"SKILL.md"}}, nil
+	}
+
+	origDir := flagDir
+	flagDir = dir
+	t.Cleanup(func() { flagDir = origDir })
+
+	cmd := &cobra.Command{}
+	cmd.SetOut(&bytes.Buffer{})
+	err = runInstall(cmd, nil)
+	require.NoError(t, err)
+
+	_, lockErr := lockfile.Load(filepath.Join(dir, "melon.lock"))
+	assert.NoError(t, lockErr, "melon.lock should have been written")
+}

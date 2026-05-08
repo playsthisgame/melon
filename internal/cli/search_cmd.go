@@ -14,7 +14,8 @@ import (
 )
 
 // runInstallFn is the function used to install after manifest updates. Overridable in tests.
-var runInstallFn func(*cobra.Command, []string) error = runInstall
+// Points to runInstallCore — policy is already checked for the specific dep being added.
+var runInstallFn func(*cobra.Command, []string) error = runInstallCore
 
 var searchCmd = &cobra.Command{
 	Use:   "search <term>",
@@ -216,6 +217,10 @@ func offerAddMany(cmd *cobra.Command, paths []string) error {
 	if err != nil {
 		return fmt.Errorf("search: %w", err)
 	}
+	if err := checkSourcePolicy(m, paths); err != nil {
+		return fmt.Errorf("search: %w", err)
+	}
+
 	if m.Dependencies == nil {
 		m.Dependencies = make(map[string]string)
 	}
