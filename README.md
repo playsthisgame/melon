@@ -142,10 +142,15 @@ tool_compat:
 # vendor: false
 
 # index is optional. Use it to point melon search/info at private registries.
+# Melon supports GitHub paths and web URLs:
+#   - github.com/owner/repo/path/to/index.yaml
+#   - github.com/owner/repo/tree/main/path/to/index.yaml
+#   - https://raw.githubusercontent.com/owner/repo/main/path/to/index.yaml
 # index:
 #   urls:
-#     - https://example.com/my-company/skill-registry/raw/main/index.yaml
-#   exclusive: false  # true = suppress the default public melon index entirely, the default value is false
+#     - github.com/my-company/skill-registry/index.yaml
+#     - https://example.com/index.yaml
+#   public_index: true  # false = suppress the default public melon index, default is true
 
 tags: []
 ```

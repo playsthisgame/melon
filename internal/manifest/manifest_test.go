@@ -153,10 +153,11 @@ func TestVendor_AbsentFieldRoundTrip(t *testing.T) {
 
 func TestIndex_RoundTrip(t *testing.T) {
 	urls := []string{"https://example.com/index.yaml", "https://corp.example.com/index.yaml"}
+	f := false
 	m := manifest.Manifest{
 		Name:    "x",
 		Version: "0.1.0",
-		Index:   &manifest.IndexConfig{URLs: urls, Exclusive: true},
+		Index:   &manifest.IndexConfig{URLs: urls, PublicIndex: &f},
 	}
 
 	dir := t.TempDir()
@@ -167,7 +168,8 @@ func TestIndex_RoundTrip(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, loaded.Index)
 	assert.Equal(t, urls, loaded.Index.URLs)
-	assert.True(t, loaded.Index.Exclusive)
+	require.NotNil(t, loaded.Index.PublicIndex)
+	assert.False(t, *loaded.Index.PublicIndex)
 }
 
 func TestIndex_AbsentFieldRoundTrip(t *testing.T) {

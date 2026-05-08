@@ -84,10 +84,11 @@ func TestResolveIndexURLs_CustomAndPublic(t *testing.T) {
 	assert.Equal(t, []string{custom1, custom2, index.DefaultIndexURL}, urls)
 }
 
-func TestResolveIndexURLs_Exclusive(t *testing.T) {
+func TestResolveIndexURLs_PublicIndexDisabled(t *testing.T) {
 	custom1 := "https://example.com/index.yaml"
 	custom2 := "https://corp.example.com/index.yaml"
-	m := manifest.Manifest{Name: "x", Version: "0.1.0", Index: &manifest.IndexConfig{URLs: []string{custom1, custom2}, Exclusive: true}}
+	f := false
+	m := manifest.Manifest{Name: "x", Version: "0.1.0", Index: &manifest.IndexConfig{URLs: []string{custom1, custom2}, PublicIndex: &f}}
 	dir := t.TempDir()
 	require.NoError(t, manifest.Save(m, filepath.Join(dir, "melon.yaml")))
 	setFlagDir(t, dir)
@@ -121,4 +122,51 @@ func TestOfferAddMany_NInputCancels(t *testing.T) {
 	_, err := runOfferAddMany(t, []string{"github.com/owner/skill-a"}, "n\n")
 	require.NoError(t, err)
 	assert.False(t, installCalled, "runInstall should not have been called")
+}
+
+func TestNormalizeIndexURL_GitHubPath(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "github.com/owner/repo/index.yaml",
+			expected: "https://raw.githubusercontent.com/owner/repo/main/index.yaml",
+		},
+		{
+			input:    "github.com/owner/repo/tree/main/path/to/index.yaml",
+			expected: "https://raw.githubusercontent.com/owner/repo/main/path/to/index.yaml",
+		},
+		{
+			input:    "github.com/owner/repo/tree/develop/index.yaml",
+			expected: "https://raw.githubusercontent.com/owner/repo/develop/index.yaml",
+		},
+		{
+			input:    "https://github.com/owner/repo/blob/main/path/to/index.yaml",
+			expected: "https://raw.githubusercontent.com/owner/repo/main/path/to/index.yaml",
+		},
+		{
+			input:    "https://github.com/owner/repo/tree/custom-branch/index.yaml",
+			expected: "https://raw.githubusercontent.com/owner/repo/custom-branch/index.yaml",
+		},
+		{
+			input:    "https://raw.githubusercontent.com/owner/repo/main/index.yaml",
+			expected: "https://raw.githubusercontent.com/owner/repo/main/index.yaml",
+		},
+		{
+			input:    "github.com/owner/repo",
+			expected: "https://raw.githubusercontent.com/owner/repo/main/index.yaml",
+		},
+		{
+			input:    "https://example.com/index.yaml",
+			expected: "https://example.com/index.yaml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			result := normalizeIndexURL(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }

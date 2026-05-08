@@ -4,9 +4,9 @@ package manifest
 type IndexConfig struct {
 	// URLs is a list of custom index.yaml URLs to search.
 	URLs []string `yaml:"urls,omitempty"`
-	// Exclusive, when true, suppresses the default public melon index so only
-	// the custom URLs are searched.
-	Exclusive bool `yaml:"exclusive,omitempty"`
+	// PublicIndex, when false, suppresses the default public melon index so only
+	// the custom URLs are searched. Defaults to true (public index included).
+	PublicIndex *bool `yaml:"public_index,omitempty"`
 }
 
 // Manifest is the parsed representation of a project's melon.yaml.
