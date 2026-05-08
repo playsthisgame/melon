@@ -274,7 +274,7 @@ melon search git workflow  # find git workflow skills
 
 Featured skills appear at the top of results. If nothing matches, melon will tell you and suggest submitting to the index.
 
-If your project has an `index` block in `melon.yaml`, search queries your custom registry instead of (or in addition to) the public melon index. Set `exclusive: true` to see only your private skills.
+If your project has an `index` block in `melon.yaml`, search queries your custom registry instead of (or in addition to) the public melon index. Set `public_index: true` to see only your private skills.
 
 ### `melon info`
 
