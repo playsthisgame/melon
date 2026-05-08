@@ -15,7 +15,7 @@ import (
 // TestInfo_ResolveIndexURLs_CustomIndex verifies that info_cmd resolves index
 // URLs from melon.yaml. The actual index lookup in runInfo is tested indirectly
 // through resolveIndexURLs, which is shared with search_cmd.
-func TestInfo_CustomIndex_Exclusive(t *testing.T) {
+func TestInfo_CustomIndex_PublicIndexDisabled(t *testing.T) {
 	// Serve a custom index that contains the skill we'll query.
 	const indexYAML = `
 skills:
@@ -31,12 +31,13 @@ skills:
 	}))
 	defer srv.Close()
 
-	// Write a melon.yaml pointing to the custom server exclusively.
+	// Write a melon.yaml pointing to the custom server, with public index disabled.
 	dir := t.TempDir()
+	f := false
 	m := manifest.Manifest{
 		Name:    "test",
 		Version: "0.1.0",
-		Index:   &manifest.IndexConfig{URLs: []string{srv.URL}, Exclusive: true},
+		Index:   &manifest.IndexConfig{URLs: []string{srv.URL}, PublicIndex: &f},
 	}
 	require.NoError(t, manifest.Save(m, filepath.Join(dir, "melon.yaml")))
 
@@ -45,7 +46,7 @@ skills:
 	t.Cleanup(func() { flagDir = orig })
 
 	urls := resolveIndexURLs()
-	assert.Equal(t, []string{srv.URL}, urls, "exclusive mode should return only the custom URL")
+	assert.Equal(t, []string{srv.URL}, urls, "public_index: false should return only the custom URL")
 }
 
 func TestInfo_CustomIndex_NoManifest(t *testing.T) {

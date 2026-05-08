@@ -108,10 +108,60 @@ func resolveIndexURLs() []string {
 		return []string{index.DefaultIndexURL}
 	}
 	candidates := m.Index.URLs
-	if !m.Index.Exclusive {
+	// Include public index by default (PublicIndex == nil or true)
+	if m.Index.PublicIndex == nil || *m.Index.PublicIndex {
 		candidates = append(candidates, index.DefaultIndexURL)
 	}
-	return uniqueURLs(candidates)
+	// Normalize GitHub paths/URLs to raw content URLs
+	normalized := make([]string, len(candidates))
+	for i, u := range candidates {
+		normalized[i] = normalizeIndexURL(u)
+	}
+	return uniqueURLs(normalized)
+}
+
+// normalizeIndexURL converts a GitHub path or web URL to a raw content URL.
+// Supports:
+//   - github.com/owner/repo/path/to/index.yaml
+//   - github.com/owner/repo/tree/main/path/to/index.yaml
+//   - https://github.com/owner/repo/blob/main/path/to/index.yaml
+//   - https://raw.githubusercontent.com/owner/repo/main/path/to/index.yaml (returned as-is)
+func normalizeIndexURL(u string) string {
+	// Already a raw GitHub URL, return as-is
+	if strings.Contains(u, "raw.githubusercontent.com") {
+		return u
+	}
+
+	// If it doesn't look like a GitHub path, return as-is (might be a different URL)
+	if !strings.Contains(u, "github.com") {
+		return u
+	}
+
+	// Strip https:// or http:// prefix
+	u = strings.TrimPrefix(strings.TrimPrefix(u, "https://"), "http://")
+
+	parts := strings.Split(u, "/")
+	if len(parts) < 3 {
+		return u // Invalid format, return as-is
+	}
+
+	owner := parts[1]
+	repo := parts[2]
+	branch := "main" // default branch
+	rest := parts[3:]
+
+	// Strip tree/<branch>/ or blob/<branch>/ segments
+	if len(rest) >= 2 && (rest[0] == "tree" || rest[0] == "blob") {
+		branch = rest[1]
+		rest = rest[2:]
+	}
+
+	path := strings.Join(rest, "/")
+	if path == "" {
+		path = "index.yaml" // Default filename
+	}
+
+	return fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s", owner, repo, branch, path)
 }
 
 // uniqueURLs returns urls with duplicates removed, preserving first-occurrence order.
