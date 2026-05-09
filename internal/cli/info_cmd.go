@@ -1,14 +1,20 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
-	gh "github.com/playsthisgame/melon/internal/github"
 	"github.com/playsthisgame/melon/internal/fetcher"
+	gh "github.com/playsthisgame/melon/internal/github"
 	"github.com/playsthisgame/melon/internal/index"
 	"github.com/spf13/cobra"
 )
+
+var flagInfoJSON bool
+
+// newGHClientFn is overridable in tests to inject a client pointed at a fake server.
+var newGHClientFn = gh.New
 
 var infoCmd = &cobra.Command{
 	Use:   "info <github-path>",
@@ -17,13 +23,27 @@ var infoCmd = &cobra.Command{
 	RunE:  runInfo,
 }
 
+func init() {
+	infoCmd.Flags().BoolVar(&flagInfoJSON, "json", false, "output as JSON")
+}
+
+// infoJSONOutput is the envelope written to stdout when --json is set.
+type infoJSONOutput struct {
+	Name          string   `json:"name"`
+	Description   string   `json:"description"`
+	Author        string   `json:"author"`
+	LatestVersion string   `json:"latest_version"`
+	Versions      []string `json:"versions"`
+	Branches      []string `json:"branches"`
+}
+
 func runInfo(cmd *cobra.Command, args []string) error {
 	path := strings.TrimRight(args[0], "/")
 
 	// Parse the GitHub path into owner, repo, and optional subpath.
 	owner, repo, subdir, err := parseGitHubPath(path)
 	if err != nil {
-		return fmt.Errorf("info: %w", err)
+		return infoErr(cmd, fmt.Errorf("info: %w", err))
 	}
 
 	// Look up the skill across all active indices for description and author.
@@ -47,33 +67,63 @@ func runInfo(cmd *cobra.Command, args []string) error {
 		author = entry.Author
 	}
 
-	client := gh.New()
+	client := newGHClientFn()
 
 	// Fall back to GitHub repo about field if not in index.
 	if description == "" {
 		var metaErr error
 		description, metaErr = client.RepoMeta(owner, repo)
 		if metaErr != nil {
-			return fmt.Errorf("info: %w", metaErr)
+			return infoErr(cmd, fmt.Errorf("info: %w", metaErr))
 		}
 	}
 
 	// Fetch tags; fall back to branches if none.
 	tags, tagsErr := client.ListTags(owner, repo)
-	var versions []string
-	versionLabel := "Versions"
-	if tagsErr == nil && len(tags) > 0 {
+	var versions, branches []string
+	hasTags := tagsErr == nil && len(tags) > 0
+	if hasTags {
 		versions = tags
 	} else {
-		branches, branchErr := client.ListBranches(owner, repo)
+		var branchErr error
+		branches, branchErr = client.ListBranches(owner, repo)
 		if branchErr != nil {
-			return fmt.Errorf("info: list branches: %w", branchErr)
+			return infoErr(cmd, fmt.Errorf("info: list branches: %w", branchErr))
 		}
-		versions = branches
-		versionLabel = "Branches"
 	}
 
-	// Print.
+	if flagInfoJSON {
+		latestVersion := ""
+		if len(versions) > 0 {
+			latestVersion = versions[0]
+		}
+		out := infoJSONOutput{
+			Name:          path,
+			Description:   description,
+			Author:        author,
+			LatestVersion: latestVersion,
+			Versions:      versions,
+			Branches:      branches,
+		}
+		if out.Versions == nil {
+			out.Versions = []string{}
+		}
+		if out.Branches == nil {
+			out.Branches = []string{}
+		}
+		enc := json.NewEncoder(cmd.OutOrStdout())
+		enc.SetIndent("", "  ")
+		return enc.Encode(out)
+	}
+
+	// Human-readable output.
+	versionLabel := "Versions"
+	displayed := versions
+	if !hasTags {
+		versionLabel = "Branches"
+		displayed = branches
+	}
+
 	out := cmd.OutOrStdout()
 	fmt.Fprintln(out)
 	fmt.Fprintf(out, "  %s\n", titleStyle.Render(path))
@@ -88,10 +138,10 @@ func runInfo(cmd *cobra.Command, args []string) error {
 	if description != "" {
 		fmt.Fprintf(out, "  %-12s %s\n", "Description", description)
 	}
-	if len(versions) > 0 {
-		fmt.Fprintf(out, "  %-12s %s\n", "Latest", versions[0])
-		if len(versions) > 1 {
-			shown := versions
+	if len(displayed) > 0 {
+		fmt.Fprintf(out, "  %-12s %s\n", "Latest", displayed[0])
+		if len(displayed) > 1 {
+			shown := displayed
 			if len(shown) > 8 {
 				shown = shown[:8]
 			}
@@ -102,6 +152,17 @@ func runInfo(cmd *cobra.Command, args []string) error {
 	fmt.Fprintf(out, "  Run 'mln add %s' to install.\n\n", path)
 
 	return nil
+}
+
+// infoErr writes a JSON error to stderr when --json is set, otherwise returns
+// the error as-is for cobra to print.
+func infoErr(cmd *cobra.Command, err error) error {
+	if !flagInfoJSON {
+		return err
+	}
+	fmt.Fprintf(cmd.ErrOrStderr(), `{"error": %q}`+"\n", err.Error())
+	cmd.SilenceErrors = true
+	return err
 }
 
 // parseGitHubPath extracts owner, repo, and subdir from a GitHub dep path.

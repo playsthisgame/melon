@@ -274,6 +274,33 @@ Pending (not installed):
   github.com/owner/repo/some-new-skill
 ```
 
+Use `--json` for machine-readable output. Combines with `--pending` and `--check`:
+
+```sh
+melon list --json
+melon list --json --pending --check
+```
+
+```json
+{
+  "installed": [
+    {
+      "name": "github.com/playsthisgame/melon-index/skills/video-to-gif",
+      "version": "1.2.0",
+      "git_tag": "v1.2.0",
+      "repo_url": "https://github.com/playsthisgame/melon-index",
+      "subdir": "skills/video-to-gif",
+      "entrypoint": "SKILL.md",
+      "tree_hash": "abc123..."
+    }
+  ],
+  "pending": ["github.com/owner/repo/some-new-skill"],
+  "check": [
+    { "name": "github.com/playsthisgame/melon-index/skills/video-to-gif", "path": ".claude/skills/video-to-gif", "status": "ok" }
+  ]
+}
+```
+
 ### `melon search`
 
 Search for skills by keyword against the [melon-index](https://github.com/playsthisgame/melon-index) curated list. In a terminal, results are shown in an interactive list — navigate with `↑↓`, press `Enter` to select, and melon will offer to run `melon add` for you.
@@ -294,7 +321,23 @@ Show metadata for a specific skill — description, author, and available versio
 ```sh
 melon info github.com/playsthisgame/melon-index/skills/video-to-gif
 melon info github.com/owner/repo/path/to/skill
+melon info github.com/owner/repo --json   # machine-readable output
 ```
+
+With `--json`:
+
+```json
+{
+  "name": "github.com/owner/repo",
+  "description": "Does something useful",
+  "author": "owner",
+  "latest_version": "v1.2.0",
+  "versions": ["v1.2.0", "v1.1.0", "v1.0.0"],
+  "branches": []
+}
+```
+
+If the repo has no semver tags, `versions` is `[]` and `branches` lists available branches instead.
 
 ### `melon clean`
 

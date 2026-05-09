@@ -13,18 +13,31 @@ import (
 	modver "golang.org/x/mod/semver"
 )
 
+const defaultAPIBase = "https://api.github.com"
+
 // Client is a thin GitHub REST API client. It reads GITHUB_TOKEN from the
 // environment and sends it as a Bearer token when present.
 type Client struct {
-	http  *http.Client
-	token string
+	http    *http.Client
+	token   string
+	apiBase string // defaults to https://api.github.com
 }
 
 // New returns a Client configured from the environment.
 func New() *Client {
 	return &Client{
-		http:  &http.Client{},
-		token: os.Getenv("GITHUB_TOKEN"),
+		http:    &http.Client{},
+		token:   os.Getenv("GITHUB_TOKEN"),
+		apiBase: defaultAPIBase,
+	}
+}
+
+// NewWithBase returns a Client that uses baseURL instead of https://api.github.com.
+// Intended for testing.
+func NewWithBase(baseURL string) *Client {
+	return &Client{
+		http:    &http.Client{},
+		apiBase: baseURL,
 	}
 }
 
@@ -70,7 +83,7 @@ type searchAPIResponse struct {
 // the melon-skill topic that match term.
 func (c *Client) SearchByTopic(term string) ([]SearchResult, error) {
 	q := url.QueryEscape("topic:melon-skill " + term)
-	resp, err := c.do("https://api.github.com/search/repositories?q=" + q)
+	resp, err := c.do(c.apiBase+"/search/repositories?q=" + q)
 	if err != nil {
 		return nil, err
 	}
@@ -96,7 +109,7 @@ func (c *Client) SearchByTopic(term string) ([]SearchResult, error) {
 
 // RepoMeta fetches the description (about field) for a GitHub repo.
 func (c *Client) RepoMeta(owner, repo string) (string, error) {
-	resp, err := c.do(fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repo))
+	resp, err := c.do(fmt.Sprintf(c.apiBase+"/repos/%s/%s", owner, repo))
 	if err != nil {
 		return "", err
 	}
@@ -122,7 +135,7 @@ func (c *Client) RepoMeta(owner, repo string) (string, error) {
 
 // ListTags returns semver tags for owner/repo sorted descending (newest first).
 func (c *Client) ListTags(owner, repo string) ([]string, error) {
-	resp, err := c.do(fmt.Sprintf("https://api.github.com/repos/%s/%s/tags?per_page=100", owner, repo))
+	resp, err := c.do(fmt.Sprintf(c.apiBase+"/repos/%s/%s/tags?per_page=100", owner, repo))
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +178,7 @@ func (c *Client) ListTags(owner, repo string) ([]string, error) {
 
 // ListBranches returns the branch names for owner/repo.
 func (c *Client) ListBranches(owner, repo string) ([]string, error) {
-	resp, err := c.do(fmt.Sprintf("https://api.github.com/repos/%s/%s/branches?per_page=100", owner, repo))
+	resp, err := c.do(fmt.Sprintf(c.apiBase+"/repos/%s/%s/branches?per_page=100", owner, repo))
 	if err != nil {
 		return nil, err
 	}
