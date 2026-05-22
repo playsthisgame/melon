@@ -14,7 +14,8 @@
   <a href="#why-melon">Why melon?</a> ·
   <a href="#how-it-works">How it works</a> ·
   <a href="#manifest-reference">Manifest Reference</a> ·
-  <a href="#commands">Commands</a>
+  <a href="#commands">Commands</a> ·
+  <a href="#organization-setup">Organization Setup</a>
 </p>
 
 <p align="center">
@@ -372,6 +373,49 @@ Use `--frozen` in CI to ensure the lock file is always up to date:
 ```sh
 melon install --frozen
 ```
+
+## Organization Setup
+
+Teams can use melon to control exactly which skills developers are allowed to install and to surface a curated internal registry instead of (or alongside) the public melon index. Two `melon.yaml` fields work together for this: `policy` for source restrictions and `index` for a private skill registry.
+
+### Restricting allowed sources
+
+Add a `policy.allowed_sources` block to `melon.yaml` to define which GitHub organizations or repos may be installed. Patterns use glob syntax — a trailing `*` matches any suffix:
+
+```yaml
+policy:
+  allowed_sources:
+    - github.com/my-company/*        # any repo under your org
+    - github.com/trusted-partner/*   # an approved external org
+```
+
+Melon enforces the allowlist on both `melon add` and `melon install`:
+
+- `melon add` checks the source before writing to `melon.yaml` and exits with an error if the dependency is not permitted — blocked skills never enter the manifest.
+- `melon install` validates every entry in `melon.yaml` against the allowlist before fetching anything. Any violation causes a non-zero exit listing all blocked dependencies.
+
+This means a developer cannot accidentally (or intentionally) add an unapproved skill, and CI will catch any attempts that bypass the local check.
+
+### Private skill registry
+
+Use the `index` block to point `melon search` and `melon info` at your own registry:
+
+```yaml
+index:
+  urls:
+    - github.com/my-company/skill-registry/index.yaml
+  public_index: false  # show only internal skills, hide the public melon index
+```
+
+The index URL can be a GitHub path (`github.com/owner/repo/path/to/index.yaml`), a GitHub tree URL, or a raw HTTPS URL. With `public_index: false`, search results and info lookups are scoped to your internal registry — developers see only the approved, curated list of skills without the noise of the full public index.
+
+Set `public_index: true` (the default) if you want to layer your private registry on top of the public one, giving developers access to both.
+
+### Distributing the policy
+
+Commit `melon.yaml` — including the `index` and `policy` blocks — to a shared project template or internal scaffolding tool. When a developer initializes a new project from that template they inherit the policy automatically, with no extra setup step.
+
+For monorepos, place the policy in the root `melon.yaml` so every project in the tree shares the same configuration.
 
 ## Why melon?
 
