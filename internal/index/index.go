@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const DefaultIndexURL = "https://raw.githubusercontent.com/playsthisgame/melon-index/main/index.yaml"
+const DefaultIndexURL = "https://raw.githubusercontent.com/playsthisgame/melon/main/index.yaml"
 
 // Entry is a single skill record from the melon-index.
 type Entry struct {
