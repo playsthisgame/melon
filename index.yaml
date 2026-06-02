@@ -816,7 +816,7 @@ skills:
     tags: [javascript, typescript, jest, testing, frontend]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/ab-test-setup
+  - name: github.com/coreyhaines31/marketingskills/skills/ab-testing
     description: "Plan, design, and implement A/B tests and growth experimentation programs — hypotheses, variants, statistical significance, and experiment velocity"
     author: coreyhaines31
     tags: [marketing, ab-testing, experimentation, growth, analytics]
@@ -834,7 +834,7 @@ skills:
     tags: [seo, ai, llm, marketing, content]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/analytics-tracking
+  - name: github.com/coreyhaines31/marketingskills/skills/analytics
     description: "Set up and audit analytics tracking — GA4, GTM, event tracking, UTM parameters, conversion tracking, and attribution"
     author: coreyhaines31
     tags: [analytics, tracking, marketing, ga4, measurement]
@@ -858,7 +858,7 @@ skills:
     tags: [marketing, community, growth, engagement, brand]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/competitor-alternatives
+  - name: github.com/coreyhaines31/marketingskills/skills/competitors
     description: "Create competitor comparison and alternative pages for SEO and sales — vs pages, alternative pages, and battle cards"
     author: coreyhaines31
     tags: [marketing, seo, competitive, content, sales]
@@ -876,25 +876,25 @@ skills:
     tags: [marketing, research, customer, jtbd, personas]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/email-sequence
+  - name: github.com/coreyhaines31/marketingskills/skills/emails
     description: "Create email sequences and drip campaigns — welcome series, onboarding flows, nurture sequences, and lifecycle email automation"
     author: coreyhaines31
     tags: [marketing, email, automation, lifecycle, saas]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/form-cro
-    description: "Optimize lead capture, contact, demo request, and application forms for higher completion rates and lower abandonment"
+  - name: github.com/coreyhaines31/marketingskills/skills/cro
+    description: "Optimize any marketing page or form for conversions — homepage, landing pages, pricing pages, feature pages, lead capture forms, and contact forms"
     author: coreyhaines31
-    tags: [marketing, cro, forms, conversion, lead-gen]
+    tags: [marketing, cro, conversion, landing-pages, forms]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/free-tool-strategy
+  - name: github.com/coreyhaines31/marketingskills/skills/free-tools
     description: "Plan and build free tools for marketing — calculators, generators, graders, and audit tools for lead generation and SEO"
     author: coreyhaines31
     tags: [marketing, growth, tools, lead-gen, seo]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/launch-strategy
+  - name: github.com/coreyhaines31/marketingskills/skills/launch
     description: "Plan product launches and feature announcements — Product Hunt, go-to-market strategy, waitlists, beta launches, and launch checklists"
     author: coreyhaines31
     tags: [marketing, launch, gtm, product, growth]
@@ -912,43 +912,37 @@ skills:
     tags: [marketing, growth, ideas, strategy, saas]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/onboarding-cro
+  - name: github.com/coreyhaines31/marketingskills/skills/onboarding
     description: "Optimize post-signup onboarding, user activation, and first-run experience to improve time-to-value and reduce early churn"
     author: coreyhaines31
     tags: [marketing, cro, onboarding, activation, saas]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/page-cro
-    description: "Optimize marketing pages for conversions — homepage, landing pages, pricing pages, and feature pages"
-    author: coreyhaines31
-    tags: [marketing, cro, conversion, landing-pages, growth]
-    featured: true
-
-  - name: github.com/coreyhaines31/marketingskills/skills/paid-ads
+  - name: github.com/coreyhaines31/marketingskills/skills/ads
     description: "Plan and optimize paid ad campaigns on Google, Meta, LinkedIn, and Twitter/X — targeting, bidding, ROAS, and budget strategy"
     author: coreyhaines31
     tags: [marketing, advertising, paid-media, ppc, growth]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/paywall-upgrade-cro
+  - name: github.com/coreyhaines31/marketingskills/skills/paywalls
     description: "Create and optimize in-app paywalls, upgrade screens, upsell modals, and feature gates to improve freemium-to-paid conversion"
     author: coreyhaines31
     tags: [marketing, cro, saas, monetization, conversion]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/popup-cro
+  - name: github.com/coreyhaines31/marketingskills/skills/popups
     description: "Create and optimize popups, modals, exit-intent overlays, slide-ins, and banners for email capture and conversions"
     author: coreyhaines31
     tags: [marketing, cro, popups, lead-gen, conversion]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/pricing-strategy
+  - name: github.com/coreyhaines31/marketingskills/skills/pricing
     description: "Design pricing tiers, packaging, and monetization strategy — value metrics, freemium, free trial, annual vs monthly, and price increases"
     author: coreyhaines31
     tags: [marketing, pricing, monetization, saas, strategy]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/product-marketing-context
+  - name: github.com/coreyhaines31/marketingskills/skills/product-marketing
     description: "Create a product marketing context document — positioning, ICP, and target audience — used as shared context across all other marketing skills"
     author: coreyhaines31
     tags: [marketing, positioning, icp, strategy, meta]
@@ -960,7 +954,7 @@ skills:
     tags: [marketing, seo, programmatic, content, growth]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/referral-program
+  - name: github.com/coreyhaines31/marketingskills/skills/referrals
     description: "Create and optimize referral programs, affiliate programs, and word-of-mouth strategies — incentives, viral loops, and ambassador programs"
     author: coreyhaines31
     tags: [marketing, referral, growth, affiliate, viral]
@@ -978,13 +972,13 @@ skills:
     tags: [marketing, sales, collateral, b2b, enablement]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/schema-markup
+  - name: github.com/coreyhaines31/marketingskills/skills/schema
     description: "Add and optimize schema markup and structured data — JSON-LD, rich snippets, FAQ schema, and Google rich results"
     author: coreyhaines31
     tags: [marketing, seo, schema, structured-data, technical]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/signup-flow-cro
+  - name: github.com/coreyhaines31/marketingskills/skills/signup
     description: "Optimize signup, registration, and trial activation flows to reduce dropoff and improve free-to-paid conversion"
     author: coreyhaines31
     tags: [marketing, cro, signup, saas, conversion]
@@ -996,10 +990,64 @@ skills:
     tags: [marketing, seo, site-architecture, ux, navigation]
     featured: true
 
-  - name: github.com/coreyhaines31/marketingskills/skills/social-content
+  - name: github.com/coreyhaines31/marketingskills/skills/social
     description: "Create and optimize social media content for LinkedIn, Twitter/X, Instagram, and TikTok — posts, threads, carousels, and content calendars"
     author: coreyhaines31
     tags: [marketing, social-media, content, linkedin, twitter]
+    featured: true
+
+  - name: github.com/coreyhaines31/marketingskills/skills/aso
+    description: "Audit and optimize App Store and Google Play listings — keyword strategy, screenshots, descriptions, and ratings to improve visibility and installs"
+    author: coreyhaines31
+    tags: [marketing, aso, app-store, mobile, growth]
+    featured: true
+
+  - name: github.com/coreyhaines31/marketingskills/skills/co-marketing
+    description: "Find co-marketing partners and plan joint campaigns — integration marketing, cross-promotions, and partnership opportunities"
+    author: coreyhaines31
+    tags: [marketing, partnerships, co-marketing, growth, b2b]
+    featured: true
+
+  - name: github.com/coreyhaines31/marketingskills/skills/competitor-profiling
+    description: "Research and profile competitors from their URLs — structured competitor analysis, intelligence gathering, and competitive landscape mapping"
+    author: coreyhaines31
+    tags: [marketing, competitive, research, analysis, strategy]
+    featured: true
+
+  - name: github.com/coreyhaines31/marketingskills/skills/directory-submissions
+    description: "Submit your product to startup, SaaS, AI, and agent directories for backlinks, domain rating, and discovery"
+    author: coreyhaines31
+    tags: [marketing, seo, directories, backlinks, launch]
+    featured: true
+
+  - name: github.com/coreyhaines31/marketingskills/skills/image
+    description: "Create, generate, and optimize marketing images using AI tools — blog heroes, social graphics, product mockups, and brand assets"
+    author: coreyhaines31
+    tags: [marketing, image, design, ai, creative]
+    featured: true
+
+  - name: github.com/coreyhaines31/marketingskills/skills/marketing-plan
+    description: "Generate a comprehensive AARRR-structured marketing plan — acquisition, activation, retention, referral, and revenue mapped to budget and team stage"
+    author: coreyhaines31
+    tags: [marketing, strategy, planning, gtm, growth]
+    featured: true
+
+  - name: github.com/coreyhaines31/marketingskills/skills/prospecting
+    description: "Find, qualify, and build outbound prospect lists — ICP-fit accounts for B2B SaaS, general B2B, and local small businesses"
+    author: coreyhaines31
+    tags: [marketing, sales, prospecting, outbound, b2b]
+    featured: true
+
+  - name: github.com/coreyhaines31/marketingskills/skills/sms
+    description: "Plan and optimize SMS and MMS marketing — welcome flows, abandoned cart texts, post-purchase sequences, and promotional sends"
+    author: coreyhaines31
+    tags: [marketing, sms, mobile, automation, lifecycle]
+    featured: true
+
+  - name: github.com/coreyhaines31/marketingskills/skills/video
+    description: "Create and produce video content using AI tools — explainer videos, product demos, social videos, and programmatic video pipelines"
+    author: coreyhaines31
+    tags: [marketing, video, ai, creative, content]
     featured: true
 
   - name: github.com/wshobson/agents/plugins/systems-programming/skills/rust-async-patterns
