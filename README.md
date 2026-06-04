@@ -107,7 +107,7 @@ Skills are fetched once into `.melon/` and symlinked into the configured tools d
 
 ### Vendoring vs. gitignore management
 
-By default (`vendor: true`, the implicit setting), `.melon/` and the generated symlinks are committed to your repo — anyone who clones gets the skills without running `melon install`. If you prefer to keep deps out of git, set `vendor: false` in `melon.yaml` (or opt out during `melon init`). Melon will automatically maintain a `.gitignore` block for `.melon/` and all managed symlink paths, keeping it in sync as you add or remove dependencies.
+By default (`vendor: true`, the implicit setting), `.melon/` and the generated symlinks are committed to your repo, so anyone who clones gets the skills without running `melon install`. If you prefer to keep deps out of git, set `vendor: false` in `melon.yaml` (or opt out during `melon init`). Melon will automatically maintain a `.gitignore` block for `.melon/` and all managed symlink paths, keeping it in sync as you add or remove dependencies.
 
 ## Manifest Reference
 
@@ -139,7 +139,7 @@ tool_compat:
 
 # vendor controls whether melon manages .gitignore for its cache and symlinks.
 # true (default): .melon/ and skill symlinks are committed to your repo.
-# false: melon auto-manages .gitignore — add/remove keeps it in sync.
+# false: melon auto-manages .gitignore; add/remove keeps it in sync.
 # vendor: false
 
 # index is optional. Use it to point melon search/info at private registries.
@@ -154,7 +154,7 @@ tool_compat:
 #   public_index: true  # false = suppress the default public melon index, default is true
 
 # policy is optional. Use it to restrict which sources can be installed.
-# Patterns use glob syntax — a trailing * matches any suffix.
+# Patterns use glob syntax; a trailing * matches any suffix.
 # policy:
 #   allowed_sources:
 #     - github.com/my-company/*       # any repo under this org
@@ -197,7 +197,7 @@ Resolve dependencies, fetch them into `.melon/`, write `melon.lock`, and symlink
 ```sh
 melon install
 melon install --frozen    # fail if melon.lock would change (useful in CI)
-melon install --no-place  # fetch and lock only — skip placement into agent dirs
+melon install --no-place  # fetch and lock only; skip placement into agent dirs
 ```
 
 If a `policy.allowed_sources` block is configured in `melon.yaml`, `melon install` validates all dependencies against the allowlist before fetching anything. Any blocked dependency causes a non-zero exit listing all violations.
@@ -224,7 +224,7 @@ melon remove github.com/playsthisgame/melon-index/skills/video-to-gif
 
 ### `melon update`
 
-Update dependencies to the latest version satisfying their existing constraints. Without arguments, shows an interactive multi-select list (TTY only) — the first option updates all deps. With a dep name, targets that dep directly.
+Update dependencies to the latest version satisfying their existing constraints. Without arguments, shows an interactive multi-select list (TTY only), where the first option updates all deps. With a dep name, targets that dep directly.
 
 ```sh
 melon update                                                    # interactive: pick which deps to update
@@ -235,7 +235,7 @@ If a newer major version exists outside your constraint, a hint is printed showi
 
 ### `melon outdated`
 
-Show which dependencies have newer versions available, without modifying anything. Exits with code 1 if any dep is outdated — useful in CI.
+Show which dependencies have newer versions available, without modifying anything. Exits with code 1 if any dep is outdated, which is useful in CI.
 
 ```sh
 melon outdated
@@ -245,7 +245,7 @@ Output includes current locked version, latest compatible version, and absolute 
 
 ### `melon diff`
 
-Show the content changes between the currently locked version of a dependency and a target version — so you can see exactly what an AI agent's context will change before you run `melon update`. By default the target is the latest version satisfying the dep's constraint; append `@<version>` or `@<branch>` to diff against a specific target.
+Show the content changes between the currently locked version of a dependency and a target version, so you can see exactly what an AI agent's context will change before you run `melon update`. By default the target is the latest version satisfying the dep's constraint; append `@<version>` or `@<branch>` to diff against a specific target.
 
 ```sh
 melon diff github.com/playsthisgame/melon-index/skills/video-to-gif         # locked vs. latest compatible
@@ -255,7 +255,7 @@ melon diff github.com/playsthisgame/melon-index/skills/video-to-gif --no-color  
 
 **Checking against a specific version**
 
-Append `@<version>` to compare your locked version against any published tag — useful for previewing a major upgrade that sits outside your current constraint:
+Append `@<version>` to compare your locked version against any published tag. This is useful for previewing a major upgrade that sits outside your current constraint:
 
 ```sh
 melon diff github.com/playsthisgame/melon-index/skills/video-to-gif@2.0.0
@@ -263,7 +263,7 @@ melon diff github.com/playsthisgame/melon-index/skills/video-to-gif@2.0.0
 
 **Checking a branch-pinned dependency against `main`**
 
-When a dependency is pinned to a branch (e.g. `main`), it's locked to the exact commit SHA you installed. "Latest" is undefined for a moving branch, so `melon diff` requires an explicit target — pass the branch name to diff your locked commit against the current branch tip:
+When a dependency is pinned to a branch (e.g. `main`), it's locked to the exact commit SHA you installed. "Latest" is undefined for a moving branch, so `melon diff` requires an explicit target. Pass the branch name to diff your locked commit against the current branch tip:
 
 ```sh
 melon diff github.com/anthropics/skills/skills/skill-creator@main
@@ -271,7 +271,7 @@ melon diff github.com/anthropics/skills/skills/skill-creator@main
 
 If `main` has advanced since you installed, you'll see a unified diff of what changed; if it hasn't moved, melon prints `No changes`.
 
-The target version is fetched into `.melon/` if not already cached — the only side effect, since `melon.yaml` and `melon.lock` are never modified. Added, removed, and changed files are shown as a unified diff; binary files are reported as changed without hunks. If the two versions have identical content, melon prints `No changes`.
+The target version is fetched into `.melon/` if not already cached. That is the only side effect, since `melon.yaml` and `melon.lock` are never modified. Added, removed, and changed files are shown as a unified diff; binary files are reported as changed without hunks. If the two versions have identical content, melon prints `No changes`.
 
 ### `melon list`
 
@@ -334,7 +334,7 @@ melon list --json --pending --check
 
 ### `melon search`
 
-Search for skills by keyword against the [melon-index](https://github.com/playsthisgame/melon-index) curated list. In a terminal, results are shown in an interactive list — navigate with `↑↓`, press `Enter` to select, and melon will offer to run `melon add` for you.
+Search for skills by keyword against the [melon-index](https://github.com/playsthisgame/melon-index) curated list. In a terminal, results are shown in an interactive list: navigate with `↑↓`, press `Enter` to select, and melon will offer to run `melon add` for you.
 
 ```sh
 melon search spec          # find spec-related skills
@@ -347,7 +347,7 @@ If your project has an `index` block in `melon.yaml`, search queries your custom
 
 ### `melon info`
 
-Show metadata for a specific skill — description, author, and available versions — before installing it.
+Show metadata for a specific skill (description, author, and available versions) before installing it.
 
 ```sh
 melon info github.com/playsthisgame/melon-index/skills/video-to-gif
@@ -410,7 +410,7 @@ Teams can use melon to control exactly which skills developers are allowed to in
 
 ### Restricting allowed sources
 
-Add a `policy.allowed_sources` block to `melon.yaml` to define which GitHub organizations or repos may be installed. Patterns use glob syntax — a trailing `*` matches any suffix:
+Add a `policy.allowed_sources` block to `melon.yaml` to define which GitHub organizations or repos may be installed. Patterns use glob syntax; a trailing `*` matches any suffix:
 
 ```yaml
 policy:
@@ -421,7 +421,7 @@ policy:
 
 Melon enforces the allowlist on both `melon add` and `melon install`:
 
-- `melon add` checks the source before writing to `melon.yaml` and exits with an error if the dependency is not permitted — blocked skills never enter the manifest.
+- `melon add` checks the source before writing to `melon.yaml` and exits with an error if the dependency is not permitted, so blocked skills never enter the manifest.
 - `melon install` validates every entry in `melon.yaml` against the allowlist before fetching anything. Any violation causes a non-zero exit listing all blocked dependencies.
 
 This means a developer cannot accidentally (or intentionally) add an unapproved skill, and CI will catch any attempts that bypass the local check.
@@ -437,13 +437,13 @@ index:
   public_index: false  # show only internal skills, hide the public melon index
 ```
 
-The index URL can be a GitHub path (`github.com/owner/repo/path/to/index.yaml`), a GitHub tree URL, or a raw HTTPS URL. With `public_index: false`, search results and info lookups are scoped to your internal registry — developers see only the approved, curated list of skills without the noise of the full public index.
+The index URL can be a GitHub path (`github.com/owner/repo/path/to/index.yaml`), a GitHub tree URL, or a raw HTTPS URL. With `public_index: false`, search results and info lookups are scoped to your internal registry, so developers see only the approved, curated list of skills without the noise of the full public index.
 
 Set `public_index: true` (the default) if you want to layer your private registry on top of the public one, giving developers access to both.
 
 ### Distributing the policy
 
-Commit `melon.yaml` — including the `index` and `policy` blocks — to a shared project template or internal scaffolding tool. When a developer initializes a new project from that template they inherit the policy automatically, with no extra setup step.
+Commit `melon.yaml`, including the `index` and `policy` blocks, to a shared project template or internal scaffolding tool. When a developer initializes a new project from that template they inherit the policy automatically, with no extra setup step.
 
 For monorepos, place the policy in the root `melon.yaml` so every project in the tree shares the same configuration.
 
@@ -455,7 +455,7 @@ As AI coding assistants become more capable, teams are building and sharing libr
 
 **Skills are versioned, not just copied.** Melon pins exact versions, git tags, and SHA-256 content hashes in `melon.lock`. If a skill author publishes a breaking change, your team won't silently pick it up, you'll see the diff in the lock file and upgrade intentionally. This means you can trust that the skill running in CI today is the same one that ran last week.
 
-**It works naturally with CI.** Run `melon install --frozen` in your pipeline to fail fast if the lock file is out of sync with the manifest. No surprises, no drift. With the default `vendor: true` setting, `.melon/` and the generated symlinks are committed to the repo so CI doesn't even need network access — everything is already there. If you prefer to keep deps out of git, set `vendor: false` and CI will fetch them fresh on each run using the pinned versions in `melon.lock`.
+**It works naturally with CI.** Run `melon install --frozen` in your pipeline to fail fast if the lock file is out of sync with the manifest. No surprises, no drift. With the default `vendor: true` setting, `.melon/` and the generated symlinks are committed to the repo so CI doesn't even need network access; everything is already there. If you prefer to keep deps out of git, set `vendor: false` and CI will fetch them fresh on each run using the pinned versions in `melon.lock`.
 
 **Works across your whole team and all your tools.** List the AI tools your project uses under `tool_compat` and melon places each skill into every agent's expected directory at once. One manifest, one install command, every agent ready to go.
 
@@ -469,7 +469,7 @@ Many agent skill collections ship a one-liner like `npx install-skill <name>` th
 | **Transitive deps** | Resolves the full dependency graph | Usually single-package only |
 | **Multiple agents** | `tool_compat` places skills for all your tools at once | Typically one target agent |
 | **Offline / CI** | Already-fetched deps are cached in `.melon/` | Always fetches from the network |
-| **Node.js required** | No — pure Go binary, no runtime needed | Yes |
+| **Node.js required** | No, pure Go binary, no runtime needed | Yes |
 | **Removal** | `melon remove` unlinks symlinks and purges the cache | Usually manual |
 
 ## License
