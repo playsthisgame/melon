@@ -46,6 +46,13 @@ var outdatedCmd = &cobra.Command{
 	RunE:  runOutdated,
 }
 
+var diffCmd = &cobra.Command{
+	Use:   "diff <dep>[@<target>]",
+	Short: "Show content changes between the locked and a target version of a dependency",
+	Args:  cobra.ExactArgs(1),
+	RunE:  runDiff,
+}
+
 var (
 	flagFrozen  bool
 	flagNoPlace bool
@@ -54,6 +61,9 @@ var (
 func init() {
 	installCmd.Flags().BoolVar(&flagFrozen, "frozen", false, "fail if melon.lock would change (useful in CI)")
 	installCmd.Flags().BoolVar(&flagNoPlace, "no-place", false, "fetch and lock only — skip placement into agent directories")
+
+	diffCmd.Flags().BoolVar(&flagDiffStat, "stat", false, "show a per-file summary instead of full hunks")
+	diffCmd.Flags().BoolVar(&flagDiffNoColor, "no-color", false, "disable colored output")
 }
 
 // Run builds and executes the cobra command tree under the given binary name.
@@ -66,7 +76,7 @@ func Run(name, version string) {
 	rootCmd.PersistentFlags().StringVar(&flagDir, "dir", "", "project root directory (default: current working directory)")
 	rootCmd.PersistentFlags().BoolVar(&flagVerbose, "verbose", false, "enable verbose output")
 
-	rootCmd.AddCommand(initCmd, installCmd, addCmd, removeCmd, updateCmd, outdatedCmd, listCmd, searchCmd, infoCmd, cleanCmd)
+	rootCmd.AddCommand(initCmd, installCmd, addCmd, removeCmd, updateCmd, outdatedCmd, diffCmd, listCmd, searchCmd, infoCmd, cleanCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
