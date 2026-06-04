@@ -243,6 +243,36 @@ melon outdated
 
 Output includes current locked version, latest compatible version, and absolute latest (when a newer major exists outside your constraint). Branch-pinned deps are skipped.
 
+### `melon diff`
+
+Show the content changes between the currently locked version of a dependency and a target version — so you can see exactly what an AI agent's context will change before you run `melon update`. By default the target is the latest version satisfying the dep's constraint; append `@<version>` or `@<branch>` to diff against a specific target.
+
+```sh
+melon diff github.com/playsthisgame/melon-index/skills/video-to-gif         # locked vs. latest compatible
+melon diff github.com/playsthisgame/melon-index/skills/video-to-gif --stat  # per-file summary only
+melon diff github.com/playsthisgame/melon-index/skills/video-to-gif --no-color  # disable colored output
+```
+
+**Checking against a specific version**
+
+Append `@<version>` to compare your locked version against any published tag — useful for previewing a major upgrade that sits outside your current constraint:
+
+```sh
+melon diff github.com/playsthisgame/melon-index/skills/video-to-gif@2.0.0
+```
+
+**Checking a branch-pinned dependency against `main`**
+
+When a dependency is pinned to a branch (e.g. `main`), it's locked to the exact commit SHA you installed. "Latest" is undefined for a moving branch, so `melon diff` requires an explicit target — pass the branch name to diff your locked commit against the current branch tip:
+
+```sh
+melon diff github.com/anthropics/skills/skills/skill-creator@main
+```
+
+If `main` has advanced since you installed, you'll see a unified diff of what changed; if it hasn't moved, melon prints `No changes`.
+
+The target version is fetched into `.melon/` if not already cached — the only side effect, since `melon.yaml` and `melon.lock` are never modified. Added, removed, and changed files are shown as a unified diff; binary files are reported as changed without hunks. If the two versions have identical content, melon prints `No changes`.
+
 ### `melon list`
 
 Show installed skills and audit installation state.
