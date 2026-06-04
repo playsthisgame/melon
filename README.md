@@ -5,7 +5,7 @@
 <h1 align="center">melon</h1>
 
 <p align="center">
-  A dependency manager for agentic markdown — skills, agents, and prompts for your AI tools.
+  A dependency manager for agent skills — versioned, resolved, and installed for your AI tools.
 </p>
 
 <p align="center">

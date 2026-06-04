@@ -1,8 +1,8 @@
-generated_at: "2026-05-02T12:27:38Z"
+generated_at: "2026-06-04T01:29:44Z"
 dependencies:
     - name: github.com/affaan-m/everything-claude-code/skills/golang-testing
-      version: 1.10.0
-      git_tag: v1.10.0
+      version: 2.0.0-rc.1
+      git_tag: v2.0.0-rc.1
       repo_url: https://github.com/affaan-m/everything-claude-code
       subdir: skills/golang-testing
       entrypoint: SKILL.md
@@ -10,8 +10,8 @@ dependencies:
       files:
         - SKILL.md
     - name: github.com/jeffallan/claude-skills/skills/golang-pro
-      version: 0.4.14
-      git_tag: v0.4.14
+      version: 0.4.15
+      git_tag: v0.4.15
       repo_url: https://github.com/jeffallan/claude-skills
       subdir: skills/golang-pro
       entrypoint: SKILL.md
@@ -24,14 +24,15 @@ dependencies:
         - references/project-structure.md
         - references/testing.md
     - name: github.com/mattpocock/skills/skills/engineering/improve-codebase-architecture
-      version: b843cb5ea74b
+      version: aaf2453fbdfe
       git_tag: main
       repo_url: https://github.com/mattpocock/skills
       subdir: skills/engineering/improve-codebase-architecture
       entrypoint: SKILL.md
-      tree_hash: sha256:390676b3f66ca0791567c39135c9eec3a651474d54b3ee78f50d70ffe4c985f0
+      tree_hash: sha256:cac84c765db710074dbd49c1e8dc3e04b4177b1a132142ae481da1afe5b823ae
       files:
         - DEEPENING.md
+        - HTML-REPORT.md
         - INTERFACE-DESIGN.md
         - LANGUAGE.md
         - SKILL.md
