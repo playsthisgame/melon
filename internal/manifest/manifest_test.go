@@ -23,7 +23,7 @@ var exampleManifest = manifest.Manifest{
 		"CLAUDE.md":        "*",
 		".claude/SKILL.md": "github.com/alice/*",
 	},
-	Tags:        []string{"coding-agent"},
+	Tags:       []string{"coding-agent"},
 	ToolCompat: []string{"claude"},
 }
 
@@ -234,4 +234,69 @@ func TestRoundTrip_EmptyOptionalFields(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, m, loaded)
+}
+
+func TestHarnessList_PrefersHarnessesOverToolCompat(t *testing.T) {
+	m := manifest.Manifest{
+		Harnesses:  []string{"claude-code"},
+		ToolCompat: []string{"cursor"},
+	}
+	assert.Equal(t, []string{"claude-code"}, m.HarnessList())
+	assert.False(t, m.UsesLegacyToolCompat())
+}
+
+func TestHarnessList_FallsBackToToolCompat(t *testing.T) {
+	m := manifest.Manifest{ToolCompat: []string{"cursor", "windsurf"}}
+	assert.Equal(t, []string{"cursor", "windsurf"}, m.HarnessList())
+	assert.True(t, m.UsesLegacyToolCompat())
+}
+
+func TestHarnessList_EmptyWhenNeitherSet(t *testing.T) {
+	var m manifest.Manifest
+	assert.Empty(t, m.HarnessList())
+	assert.False(t, m.UsesLegacyToolCompat())
+}
+
+// A pre-v0.5.0 manifest must keep working, and melon must NOT silently rewrite
+// tool_compat to harnesses — a teammate on an older binary would then read a
+// manifest with no tool_compat and place skills in the wrong directory.
+func TestToolCompat_LegacyManifestParsesAndIsNotRewritten(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "melon.yaml")
+	legacy := "name: legacy\nversion: 1.0.0\nentrypoint: SKILL.md\ntool_compat:\n  - claude-code\n"
+	require.NoError(t, os.WriteFile(path, []byte(legacy), 0644))
+
+	m, err := manifest.Load(path)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"claude-code"}, m.HarnessList())
+	assert.True(t, m.UsesLegacyToolCompat())
+
+	// Re-saving must preserve the original key, not migrate it.
+	require.NoError(t, manifest.Save(m, path))
+	out, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Contains(t, string(out), "tool_compat:")
+	assert.NotContains(t, string(out), "harnesses:")
+}
+
+func TestHarnesses_RoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "melon.yaml")
+	m := manifest.Manifest{
+		Name:       "modern",
+		Version:    "1.0.0",
+		Entrypoint: "SKILL.md",
+		Harnesses:  []string{"claude-code", "codex"},
+	}
+	require.NoError(t, manifest.Save(m, path))
+
+	out, err := os.ReadFile(path)
+	require.NoError(t, err)
+	assert.Contains(t, string(out), "harnesses:")
+	assert.NotContains(t, string(out), "tool_compat:")
+
+	got, err := manifest.Load(path)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"claude-code", "codex"}, got.HarnessList())
+	assert.False(t, got.UsesLegacyToolCompat())
 }

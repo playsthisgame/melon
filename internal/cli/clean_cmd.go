@@ -83,7 +83,7 @@ func runClean(cmd *cobra.Command, args []string) error {
 				skillDirs = append(skillDirs, filepath.Join(dir, base))
 			}
 		} else {
-			targets, _ := agents.DeriveTargets(m.ToolCompat)
+			targets, _ := agents.DeriveTargets(m.HarnessList())
 			for _, t := range targets {
 				skillDirs = append(skillDirs, filepath.Join(dir, t))
 			}

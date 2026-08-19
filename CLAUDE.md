@@ -94,3 +94,21 @@ Design decisions and requirements live in `openspec/specs/`. Each spec is a BDD-
 ## Release Process
 
 Releases are triggered by pushing a `v*` tag. GoReleaser builds `melon` and `mln` binaries for darwin/linux/windows (amd64 + arm64). A follow-up GitHub Actions job publishes the npm wrapper packages to npm with platform-specific optionalDependencies.
+
+## GitHub project board
+
+Project: Melon, user project #3 (private), owner: playsthisgame
+
+Status field: PVTSSF_lAHOBXAZx84BWaMczhRuw2k
+
+Option IDs:
+- Backlog:     f75ad846
+- Ready:       61e4505c
+- In progress: 47fc9ee4
+- In review:   df73e18b
+- Done:        98236657
+
+Priority field: PVTSSF_lAHOBXAZx84BWaMczhRuxdk (P0 79628723, P1 0a877460, P2 da944a9c)
+
+Use these IDs directly — do not re-query the field list each run.
+Note the casing: "In progress" and "In review" are not title case.

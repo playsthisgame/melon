@@ -41,10 +41,10 @@ func TestInitYes_CreatesValidManifestAndStoreDir(t *testing.T) {
 	assert.Equal(t, filepath.Base(dir), m.Name)
 	assert.Equal(t, "0.1.0", m.Version)
 
-	// tool_compat defaults to empty — placement falls back to .agents/skills/.
-	assert.Empty(t, m.ToolCompat)
+	// harnesses defaults to empty — placement falls back to .agents/skills/.
+	assert.Empty(t, m.HarnessList())
 
-	// outputs must be absent — paths are derived from tool_compat automatically.
+	// outputs must be absent — paths are derived from harnesses automatically.
 	assert.Nil(t, m.Outputs, "outputs should not be set in generated melon.yaml")
 
 	// .melon/ directory must exist.
@@ -99,11 +99,11 @@ func TestGenerateManifestYAML_ParsesCleanly(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.name, m.Name)
 			if len(tc.agentNames) == 0 {
-				assert.Empty(t, m.ToolCompat)
+				assert.Empty(t, m.HarnessList())
 			} else {
-				assert.Equal(t, tc.agentNames, m.ToolCompat)
+				assert.Equal(t, tc.agentNames, m.HarnessList())
 			}
-			// outputs should not be present — derived from tool_compat.
+			// outputs should not be present — derived from harnesses.
 			assert.Nil(t, m.Outputs)
 		})
 	}
