@@ -26,9 +26,16 @@ type Manifest struct {
 	Dependencies map[string]string `yaml:"dependencies,omitempty"`
 	// Outputs maps target filenames to glob patterns of dep names to include.
 	// Example: "CLAUDE.md": "*"  or  ".claude/SKILL.md": "github.com/alice/*"
-	Outputs    map[string]string `yaml:"outputs,omitempty"`
-	Tags       []string          `yaml:"tags,omitempty"`
-	ToolCompat []string          `yaml:"tool_compat,omitempty"`
+	Outputs map[string]string `yaml:"outputs,omitempty"`
+	Tags    []string          `yaml:"tags,omitempty"`
+	// Harnesses lists the agent harnesses this project targets (claude-code,
+	// cursor, codex, …). It drives where melon install places skills.
+	// Introduced in v0.5.0.
+	Harnesses []string `yaml:"harnesses,omitempty"`
+	// ToolCompat is the pre-v0.5.0 name for Harnesses. It is still honored when
+	// harnesses is absent so older manifests keep working unchanged. Never read
+	// this field directly — call HarnessList instead.
+	ToolCompat []string `yaml:"tool_compat,omitempty"`
 	// Vendor controls whether melon manages .gitignore for its cache and symlinks.
 	// When nil or true, melon never touches .gitignore (default: vendor everything).
 	// When false, melon keeps .gitignore in sync across install/add/remove.
@@ -44,4 +51,21 @@ type Manifest struct {
 // Returns true when Vendor is nil (field absent) or explicitly true.
 func (m Manifest) IsVendored() bool {
 	return m.Vendor == nil || *m.Vendor
+}
+
+// HarnessList returns the harnesses this project targets. harnesses wins when
+// both keys are present; tool_compat is honored for manifests written before
+// v0.5.0. Callers must use this rather than reading either field directly.
+func (m Manifest) HarnessList() []string {
+	if len(m.Harnesses) > 0 {
+		return m.Harnesses
+	}
+	return m.ToolCompat
+}
+
+// UsesLegacyToolCompat reports whether the manifest depends on the deprecated
+// tool_compat key — that is, tool_compat carries the value because harnesses is
+// absent. Drives the one-line deprecation notice printed on install.
+func (m Manifest) UsesLegacyToolCompat() bool {
+	return len(m.Harnesses) == 0 && len(m.ToolCompat) > 0
 }

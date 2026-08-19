@@ -32,3 +32,5 @@ npm/packages/**/*.tgz
 
 # Benchmark
 /benchmark/
+# Agent worktrees
+.claude/worktrees/

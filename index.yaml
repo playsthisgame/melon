@@ -1218,3 +1218,422 @@ skills:
     tags: [workflow, agentic, productivity, handoff]
     featured: true
 
+  - name: github.com/anthropics/skills/skills/academy-guide
+    description: "Guide for working through Anthropic's Claude Code academy curriculum and exercises"
+    author: anthropics
+    tags: [learning, claude-code, education]
+    featured: true
+
+  - name: github.com/anthropics/skills/skills/discernment-nudge
+    description: "Nudge the agent toward critical discernment — surfacing assumptions and pushing back instead of agreeing reflexively"
+    author: anthropics
+    tags: [reasoning, quality, agentic]
+    featured: true
+
+  - name: github.com/vercel-labs/agent-skills/skills/vercel-optimize
+    description: "Diagnose and optimize Vercel deployments — build times, bundle size, caching, and runtime performance"
+    author: vercel-labs
+    tags: [vercel, performance, deployment]
+    featured: true
+
+  - name: github.com/vercel-labs/agent-skills/skills/writing-guidelines
+    description: "Vercel's writing guidelines for docs, changelogs, and product copy"
+    author: vercel-labs
+    tags: [writing, docs, content]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/using-agent-skills
+    description: "Map incoming work to the right skill workflow and apply shared operating rules across skills"
+    author: addyosmani
+    tags: [meta, skills, workflow]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/interview-me
+    description: "One-question-at-a-time interview that extracts what the user actually wants, until ~95% confidence"
+    author: addyosmani
+    tags: [planning, requirements, workflow]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/idea-refine
+    description: "Structured divergent/convergent thinking to turn vague ideas into concrete proposals"
+    author: addyosmani
+    tags: [planning, brainstorming, product]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/spec-driven-development
+    description: "Write a PRD covering objectives, commands, structure, code style, testing, and boundaries before any code"
+    author: addyosmani
+    tags: [planning, spec, workflow]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/planning-and-task-breakdown
+    description: "Decompose specs into small, verifiable tasks with acceptance criteria and dependency ordering"
+    author: addyosmani
+    tags: [planning, tasks, workflow]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/incremental-implementation
+    description: "Thin vertical slices — implement, test, verify, commit — with feature flags and rollback-friendly changes"
+    author: addyosmani
+    tags: [workflow, engineering, delivery]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/test-driven-development
+    description: "Red-Green-Refactor with the test pyramid, test sizing, DAMP over DRY, and browser testing"
+    author: addyosmani
+    tags: [testing, tdd, engineering]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/context-engineering
+    description: "Feed agents the right information at the right time — rules files, context packing, MCP integrations"
+    author: addyosmani
+    tags: [context, agentic, productivity]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/source-driven-development
+    description: "Ground every framework decision in official documentation — verify, cite sources, flag what's unverified"
+    author: addyosmani
+    tags: [research, docs, quality]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/doubt-driven-development
+    description: "Adversarial fresh-context review of every non-trivial decision in flight, with optional cross-model escalation"
+    author: addyosmani
+    tags: [review, quality, reasoning]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/frontend-ui-engineering
+    description: "Component architecture, design systems, state management, responsive design, and WCAG 2.1 AA accessibility"
+    author: addyosmani
+    tags: [frontend, ui, accessibility]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/api-and-interface-design
+    description: "Contract-first API design — Hyrum's Law, One-Version Rule, error semantics, boundary validation"
+    author: addyosmani
+    tags: [api, design, backend]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/browser-testing-with-devtools
+    description: "Chrome DevTools MCP for live runtime data — DOM inspection, console logs, network traces, performance profiling"
+    author: addyosmani
+    tags: [testing, browser, devtools]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/debugging-and-error-recovery
+    description: "Five-step triage — reproduce, localize, reduce, fix, guard — with stop-the-line rules and safe fallbacks"
+    author: addyosmani
+    tags: [debugging, engineering, quality]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/code-review-and-quality
+    description: "Five-axis code review with change sizing, severity labels, review speed norms, and splitting strategies"
+    author: addyosmani
+    tags: [code-review, quality, engineering]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/code-simplification
+    description: "Chesterton's Fence and the Rule of 500 — reduce complexity while preserving exact behavior"
+    author: addyosmani
+    tags: [refactoring, quality, engineering]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/security-and-hardening
+    description: "OWASP Top 10 prevention, auth patterns, secrets management, dependency auditing, three-tier boundaries"
+    author: addyosmani
+    tags: [security, hardening, engineering]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/performance-optimization
+    description: "Measure-first performance work — Core Web Vitals targets, profiling workflows, bundle analysis"
+    author: addyosmani
+    tags: [performance, profiling, frontend]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/git-workflow-and-versioning
+    description: "Trunk-based development, atomic commits, change sizing, and the commit-as-save-point pattern"
+    author: addyosmani
+    tags: [git, workflow, versioning]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/ci-cd-and-automation
+    description: "Shift Left and Faster is Safer — feature flags, quality gate pipelines, failure feedback loops"
+    author: addyosmani
+    tags: [ci-cd, automation, devops]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/deprecation-and-migration
+    description: "Code-as-liability mindset — compulsory vs advisory deprecation, migration patterns, zombie code removal"
+    author: addyosmani
+    tags: [migration, refactoring, maintenance]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/documentation-and-adrs
+    description: "Architecture Decision Records, API docs, and inline documentation standards — document the why"
+    author: addyosmani
+    tags: [docs, adr, architecture]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/observability-and-instrumentation
+    description: "Structured logging, RED metrics, OpenTelemetry tracing, and symptom-based alerting"
+    author: addyosmani
+    tags: [observability, monitoring, devops]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/shipping-and-launch
+    description: "Pre-launch checklists, feature flag lifecycle, staged rollouts, rollback procedures, monitoring setup"
+    author: addyosmani
+    tags: [release, devops, delivery]
+    featured: true
+
+  - name: github.com/blader/humanizer/skills/humanizer
+    description: "Remove the tells of AI-generated writing — em-dash tics, hedging, listicle rhythm — from any text"
+    author: blader
+    tags: [writing, editing, content]
+    featured: true
+
+  - name: github.com/Nutlope/hallmark/skills/hallmark
+    description: "Anti-AI-slop design skill — opinionated typography, color, and layout defaults that avoid generic output"
+    author: Nutlope
+    tags: [design, frontend, ui]
+    featured: true
+
+  - name: github.com/Leonxlnx/taste-skill/skills/taste-skill
+    description: "Give the agent design taste — brief inference, design-system mapping, and pre-flight checks for modern frontends"
+    author: Leonxlnx
+    tags: [design, frontend, ui]
+    featured: true
+
+  - name: github.com/Leonxlnx/taste-skill/skills/minimalist-skill
+    description: "Editorial, Notion/Linear-style minimalist UI with restrained palettes and crisp structure"
+    author: Leonxlnx
+    tags: [design, frontend, ui]
+    featured: true
+
+  - name: github.com/Leonxlnx/taste-skill/skills/brutalist-skill
+    description: "Industrial brutalist UI — Swiss typography, sharp contrast, and experimental layouts"
+    author: Leonxlnx
+    tags: [design, frontend, ui]
+    featured: true
+
+  - name: github.com/Leonxlnx/taste-skill/skills/redesign-skill
+    description: "Audit an existing UI, then fix layout, spacing, hierarchy, and styling"
+    author: Leonxlnx
+    tags: [design, frontend, refactoring]
+    featured: true
+
+  - name: github.com/Leonxlnx/taste-skill/skills/image-to-code-skill
+    description: "Image-first pipeline — generate site references, analyze them, then implement a matching frontend"
+    author: Leonxlnx
+    tags: [design, frontend, codegen]
+    featured: true
+
+  - name: github.com/Leonxlnx/taste-skill/skills/brandkit
+    description: "Generate brand identity boards covering logos, palettes, and type applications"
+    author: Leonxlnx
+    tags: [design, branding, marketing]
+    featured: true
+
+  - name: github.com/zarazhangrui/frontend-slides
+    description: "Create beautiful presentation slides on the web using the agent's frontend skills"
+    author: zarazhangrui
+    tags: [slides, frontend, presentation]
+    featured: true
+
+  - name: github.com/DietrichGebert/ponytail/skills/ponytail
+    description: "Think like the laziest senior dev in the room — YAGNI enforcement, the best code is code you never wrote"
+    author: DietrichGebert
+    tags: [engineering, simplification, quality]
+    featured: true
+
+  - name: github.com/DietrichGebert/ponytail/skills/ponytail-review
+    description: "Review a change for unnecessary abstraction, speculative generality, and code that shouldn't exist"
+    author: DietrichGebert
+    tags: [code-review, simplification, quality]
+    featured: true
+
+  - name: github.com/DietrichGebert/ponytail/skills/ponytail-audit
+    description: "Audit a codebase for over-engineering and accumulated complexity"
+    author: DietrichGebert
+    tags: [audit, refactoring, quality]
+    featured: true
+
+  - name: github.com/DietrichGebert/ponytail/skills/ponytail-debt
+    description: "Surface and prioritize technical debt worth paying down"
+    author: DietrichGebert
+    tags: [tech-debt, refactoring, maintenance]
+    featured: true
+
+  - name: github.com/OthmanAdi/planning-with-files/skills/planning-with-files
+    description: "Persistent file-based planning for long-running tasks — crash-proof markdown plans that survive /clear and compaction"
+    author: OthmanAdi
+    tags: [planning, context, agentic]
+    featured: true
+
+  - name: github.com/mvanhorn/last30days-skill/skills/last30days
+    description: "Research any topic across Reddit, X, YouTube, HN, Polymarket, and the web, then synthesize a grounded summary"
+    author: mvanhorn
+    tags: [research, search, productivity]
+    featured: true
+
+  - name: github.com/virgiliojr94/book-to-skill
+    description: "Turn a technical book PDF into an agent skill you can study from and reference while you work"
+    author: virgiliojr94
+    tags: [meta, skills, learning]
+    featured: true
+
+  - name: github.com/kepano/obsidian-skills/skills/obsidian-cli
+    description: "Interact with Obsidian vaults via the Obsidian CLI, including plugin and theme development"
+    author: kepano
+    tags: [obsidian, notes, cli]
+    featured: true
+
+  - name: github.com/kepano/obsidian-skills/skills/obsidian-markdown
+    description: "Create and edit Obsidian Flavored Markdown with wikilinks, embeds, callouts, and properties"
+    author: kepano
+    tags: [obsidian, markdown, notes]
+    featured: true
+
+  - name: github.com/kepano/obsidian-skills/skills/obsidian-bases
+    description: "Create and edit Obsidian Bases (.base) with views, filters, formulas, and summaries"
+    author: kepano
+    tags: [obsidian, database, notes]
+    featured: true
+
+  - name: github.com/kepano/obsidian-skills/skills/json-canvas
+    description: "Create and edit JSON Canvas files (.canvas) with nodes, edges, groups, and connections"
+    author: kepano
+    tags: [obsidian, canvas, diagrams]
+    featured: true
+
+  - name: github.com/kepano/obsidian-skills/skills/defuddle
+    description: "Extract clean markdown from web pages using Defuddle, removing clutter to save tokens"
+    author: kepano
+    tags: [scraping, markdown, tokens]
+    featured: true
+
+  - name: github.com/tt-a1i/archify/archify
+    description: "Beautiful, verifiable architecture, workflow, sequence, and data-flow diagrams as self-contained HTML with export"
+    author: tt-a1i
+    tags: [diagrams, architecture, visualization]
+    featured: true
+
+  - name: github.com/Agents365-ai/drawio-skill/skills/drawio-skill
+    description: "Generate draw.io diagrams from natural language — UML, SysML, BPMN, network, C4 — with PNG/SVG/PDF export"
+    author: Agents365-ai
+    tags: [diagrams, drawio, uml]
+    featured: true
+
+  - name: github.com/NVIDIA/SkillSpector/skills/skill-inspector
+    description: "Scan agent skills for prompt injection, data exfiltration, and supply-chain risks before installing them"
+    author: NVIDIA
+    tags: [security, skills, audit]
+    featured: true
+
+  - name: github.com/citrolabs/ego-lite/skills/ego-browser
+    description: "Drive a real logged-in browser for agent automation without disturbing your active session"
+    author: citrolabs
+    tags: [browser, automation, testing]
+    featured: true
+
+  - name: github.com/teng-lin/notebooklm-py
+    description: "Programmatic access to Google NotebookLM — create notebooks, add sources, and generate audio overviews"
+    author: teng-lin
+    tags: [research, notebooklm, automation]
+    featured: true
+
+  - name: github.com/phuryn/pm-skills/pm-product-discovery/skills/opportunity-solution-tree
+    description: "Build an opportunity solution tree to connect outcomes, opportunities, and candidate solutions"
+    author: phuryn
+    tags: [product, discovery, planning]
+    featured: true
+
+  - name: github.com/phuryn/pm-skills/pm-product-discovery/skills/prioritize-features
+    description: "Prioritize a feature backlog with explicit criteria and tradeoff reasoning"
+    author: phuryn
+    tags: [product, prioritization, planning]
+    featured: true
+
+  - name: github.com/phuryn/pm-skills/pm-product-discovery/skills/interview-script
+    description: "Write a customer interview script that tests assumptions instead of pitching the product"
+    author: phuryn
+    tags: [product, research, discovery]
+    featured: true
+
+  - name: github.com/phuryn/pm-skills/pm-product-discovery/skills/summarize-interview
+    description: "Summarize customer interviews into findings, quotes, and validated or invalidated assumptions"
+    author: phuryn
+    tags: [product, research, discovery]
+    featured: true
+
+  - name: github.com/phuryn/pm-skills/pm-product-strategy/skills/lean-canvas
+    description: "Fill out a Lean Canvas covering problem, solution, metrics, channels, and unfair advantage"
+    author: phuryn
+    tags: [product, strategy, startup]
+    featured: true
+
+  - name: github.com/phuryn/pm-skills/pm-product-strategy/skills/product-strategy
+    description: "Develop a product strategy connecting vision, positioning, and sequenced bets"
+    author: phuryn
+    tags: [product, strategy, planning]
+    featured: true
+
+  - name: github.com/phuryn/pm-skills/pm-product-strategy/skills/pricing-strategy
+    description: "Design pricing and packaging — value metrics, tiers, and willingness-to-pay analysis"
+    author: phuryn
+    tags: [product, pricing, monetization]
+    featured: true
+
+  - name: github.com/phuryn/pm-skills/pm-product-strategy/skills/swot-analysis
+    description: "Run a structured SWOT analysis for a product, feature, or market entry"
+    author: phuryn
+    tags: [product, strategy, analysis]
+    featured: true
+
+  - name: github.com/K-Dense-AI/scientific-agent-skills/skills/literature-review
+    description: "Conduct systematic literature reviews across scientific databases with citation tracking"
+    author: K-Dense-AI
+    tags: [research, science, literature]
+    featured: true
+
+  - name: github.com/K-Dense-AI/scientific-agent-skills/skills/scientific-writing
+    description: "Write and structure scientific manuscripts to journal conventions"
+    author: K-Dense-AI
+    tags: [research, science, writing]
+    featured: true
+
+  - name: github.com/K-Dense-AI/scientific-agent-skills/skills/peer-review
+    description: "Produce a rigorous peer review of a scientific manuscript with actionable critique"
+    author: K-Dense-AI
+    tags: [research, science, review]
+    featured: true
+
+  - name: github.com/K-Dense-AI/scientific-agent-skills/skills/statistical-analysis
+    description: "Choose and run appropriate statistical tests with correct assumptions and reporting"
+    author: K-Dense-AI
+    tags: [statistics, science, data]
+    featured: true
+
+  - name: github.com/K-Dense-AI/scientific-agent-skills/skills/scientific-visualization
+    description: "Build publication-quality scientific figures and plots"
+    author: K-Dense-AI
+    tags: [visualization, science, charts]
+    featured: true
+
+  - name: github.com/K-Dense-AI/scientific-agent-skills/skills/exploratory-data-analysis
+    description: "Systematic exploratory data analysis — distributions, missingness, correlations, and outliers"
+    author: K-Dense-AI
+    tags: [data, analysis, science]
+    featured: true
+
+  - name: github.com/K-Dense-AI/scientific-agent-skills/skills/biopython
+    description: "Work with biological sequence data using Biopython"
+    author: K-Dense-AI
+    tags: [bioinformatics, python, science]
+    featured: true
+
+  - name: github.com/K-Dense-AI/scientific-agent-skills/skills/rdkit
+    description: "Cheminformatics with RDKit — molecule parsing, descriptors, fingerprints, and substructure search"
+    author: K-Dense-AI
+    tags: [chemistry, python, science]
+    featured: true

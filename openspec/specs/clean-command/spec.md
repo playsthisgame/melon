@@ -14,7 +14,7 @@ The `melon clean` command SHALL delete every directory under `.melon/` whose `na
 - **THEN** the command exits successfully with "Nothing to clean."
 
 ### Requirement: Clean removes orphaned symlinks for removed cache entries
-For each cache entry removed by `clean`, the command SHALL also remove any corresponding symlinks in agent skill directories (e.g. `.claude/skills/`, `.windsurf/skills/`). The agent directories are derived from the project manifest's `tool_compat` or `outputs` fields.
+For each cache entry removed by `clean`, the command SHALL also remove any corresponding symlinks in agent skill directories (e.g. `.claude/skills/`, `.windsurf/skills/`). The agent directories are derived from the project manifest's `harnesses` (or the deprecated `tool_compat`) or `outputs` fields.
 
 #### Scenario: Symlink removed alongside cache entry
 - **WHEN** an orphaned `.melon/` entry also has a symlink in an agent skill directory

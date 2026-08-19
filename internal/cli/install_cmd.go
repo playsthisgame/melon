@@ -76,6 +76,12 @@ func runInstallCore(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("install: %w", err)
 	}
 
+	if m.UsesLegacyToolCompat() {
+		fmt.Fprintln(cmd.OutOrStdout(),
+			"warning: melon.yaml uses tool_compat, renamed to harnesses in v0.5.0.\n"+
+				"         tool_compat still works; rename the key to silence this.")
+	}
+
 	// Load existing lock file for diff display (ignore error if absent).
 	var oldLock lockfile.LockFile
 	oldLock, _ = lockfile.Load(lockPath)
@@ -239,7 +245,7 @@ func gitignoreSymlinkEntries(skillName string, m manifest.Manifest) []string {
 			targetBases = append(targetBases, base)
 		}
 	} else {
-		bases, err := agents.DeriveTargets(m.ToolCompat)
+		bases, err := agents.DeriveTargets(m.HarnessList())
 		if err == nil {
 			targetBases = bases
 		}

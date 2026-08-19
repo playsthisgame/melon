@@ -188,22 +188,22 @@ func promptVendor(cmd *cobra.Command) bool {
 
 // generateManifestYAML produces a fully commented melon.yaml string.
 // The outputs block is intentionally omitted — mln install derives output paths
-// automatically from tool_compat using the agent_directory_conventions table.
+// automatically from harnesses using the agent_directory_conventions table.
 // Users can add an explicit outputs block to override the derived paths.
 // When vendor is false, a vendor: false line is emitted.
 func generateManifestYAML(name, description string, agentNames []string, vendor bool) string {
 	escapedDesc := strings.ReplaceAll(description, `"`, `\"`)
 
-	var toolCompatBlock string
+	var harnessBlock string
 	if len(agentNames) == 0 {
-		toolCompatBlock = "tool_compat: []"
+		harnessBlock = "harnesses: []"
 	} else {
 		lines := make([]string, 0, len(agentNames)+1)
-		lines = append(lines, "tool_compat:")
+		lines = append(lines, "harnesses:")
 		for _, a := range agentNames {
 			lines = append(lines, "  - "+a)
 		}
-		toolCompatBlock = strings.Join(lines, "\n")
+		harnessBlock = strings.Join(lines, "\n")
 	}
 
 	vendorBlock := ""
@@ -228,9 +228,9 @@ description: "%s"
 #   alice/pdf-skill: "^1.2.0"
 dependencies: {}
 
-# tool_compat drives where melon install places skill directories.
+# harnesses drives where melon install places skill directories.
 # When empty, skills are placed in .agents/skills/ by default.
-# Melon uses the known directory convention for each tool automatically:
+# Melon uses the known directory convention for each harness automatically:
 #   claude-code    -> .claude/skills/
 #   cursor         -> .agents/skills/
 #   windsurf       -> .windsurf/skills/
@@ -239,12 +239,12 @@ dependencies: {}
 %s
 
 # outputs is optional. Declare it only when you need non-standard placement.
-# If omitted, paths are derived from tool_compat (or .agents/skills/ if empty).
+# If omitted, paths are derived from harnesses (or .agents/skills/ if empty).
 # outputs:
 #   .claude/skills/: "*"
 #   .windsurf/skills/: "alice/pdf-skill"
 %s
 
 tags: []
-`, name, "0.1.0", escapedDesc, toolCompatBlock, vendorBlock)
+`, name, "0.1.0", escapedDesc, harnessBlock, vendorBlock)
 }

@@ -5,7 +5,7 @@
 <h1 align="center">melon</h1>
 
 <p align="center">
-  A dependency manager for agent skills — versioned, resolved, and installed for your AI tools.
+  A dependency manager for agent skills — versioned, resolved, and installed for your agent harnesses.
 </p>
 
 <p align="center">
@@ -30,7 +30,7 @@
 
 ## What is melon?
 
-Melon manages markdown-based packages that AI coding assistants read as context. It resolves dependencies from GitHub, fetches them into a local cache, and places them into your agent's expected directory (e.g. `.claude/skills/`) so they are available immediately.
+Melon manages markdown-based packages that agent harnesses read as context. It resolves dependencies from GitHub, fetches them into a local cache, and places them into your agent's expected directory (e.g. `.claude/skills/`) so they are available immediately.
 
 ## See it in action
 
@@ -60,7 +60,7 @@ Requires Git to be available on your `PATH`.
 melon init
 ```
 
-This creates a `melon.yaml` manifest and the `.melon/` cache directory. You'll be prompted for a package name, type, and which AI tools you use.
+This creates a `melon.yaml` manifest and the `.melon/` cache directory. You'll be prompted for a package name, type, and which harnesses you use.
 
 **2. Add a dependency**
 
@@ -85,7 +85,7 @@ Versions can be a semver constraint (`^1.2.0`, `~2.0.0`, `1.0.0`) or a branch na
 melon install
 ```
 
-Melon resolves each dependency, fetches it via sparse git checkout, writes `melon.lock`, and places skills into your tool directories.
+Melon resolves each dependency, fetches it via sparse git checkout, writes `melon.lock`, and places skills into your harness directories.
 
 ```
   resolving github.com/playsthisgame/melon-index/skills/video-to-gif (^1.0.2)...
@@ -97,13 +97,13 @@ Melon resolves each dependency, fetches it via sparse git checkout, writes `melo
 ## How it works
 
 ```
-melon.yaml          — declares your dependencies and target AI tools    ← commit
+melon.yaml          — declares your dependencies and target harnesses   ← commit
 melon.lock         — pins exact versions, git tags, and content hashes ← commit
 .melon/            — local cache; one directory per dep@version
 .claude/skills/    — symlinks into .melon/ created by melon install
 ```
 
-Skills are fetched once into `.melon/` and symlinked into the configured tools directories.
+Skills are fetched once into `.melon/` and symlinked into the configured harness directories.
 
 ### Vendoring vs. gitignore management
 
@@ -123,14 +123,14 @@ dependencies:
   github.com/anthropics/skills/skills/skill-creator: "main"
   github.com/playsthisgame/melon-index/skills/video-to-gif: "^1.0.2"
 
-# tool_compat drives where melon install places skills.
-# Melon knows the conventions for each agent automatically:
+# harnesses drives where melon install places skills.
+# Melon knows the conventions for each harness automatically:
 #   claude-code    -> .claude/skills/
 #   cursor         -> .agents/skills/
 #   windsurf       -> .windsurf/skills/
 #   roo            -> .roo/skills/
 #   ... (and more)
-tool_compat:
+harnesses:
   - claude-code
 
 # outputs is optional. Use it to override the automatic placement paths.
@@ -163,9 +163,9 @@ tool_compat:
 tags: []
 ```
 
-### Supported AI tools
+### Supported harnesses
 
-| AI tool | Project skills directory |
+| Harness | Project skills directory |
 |---|---|
 | `claude-code` | `.claude/skills/` |
 | `cursor` | `.agents/skills/` |
@@ -177,6 +177,11 @@ tags: []
 | `github-copilot` | `.agents/skills/` |
 | `cline` | `.agents/skills/` |
 | `amp` | `.agents/skills/` |
+
+> **Renamed in v0.5.0:** `harnesses` was previously called `tool_compat`. Older
+> manifests keep working — melon reads `tool_compat` whenever `harnesses` is
+> absent, and prints a one-line notice on install. If both keys are present,
+> `harnesses` wins. Melon never rewrites the key for you.
 
 ## Commands
 
@@ -192,7 +197,7 @@ melon init --dir ./app  # initialize in a different directory
 
 ### `melon install`
 
-Resolve dependencies, fetch them into `.melon/`, write `melon.lock`, and symlink skills into tool directories.
+Resolve dependencies, fetch them into `.melon/`, write `melon.lock`, and symlink skills into harness directories.
 
 ```sh
 melon install
@@ -449,7 +454,16 @@ For monorepos, place the policy in the root `melon.yaml` so every project in the
 
 ## Why melon?
 
-As AI coding assistants become more capable, teams are building and sharing libraries of skills. Without a proper dependency manager, keeping these skills consistent across developers, environments, and CI becomes a manual, error-prone process.
+As agent harnesses become more capable, teams are building and sharing libraries of skills. Without a proper dependency manager, keeping these skills consistent across developers, environments, and CI becomes a manual, error-prone process.
+
+| | Skills | Commands | Lock file | Transitive deps | Multi-harness |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **melon** | ✅ | 🚧 planned | ✅ | ✅ | ✅ |
+| **skills.sh** (`npx skills`) | ✅ | ❌ | ❌ | ❌ | ✅ |
+| **Claude Code plugins** | ✅ | ✅ | ❌ | ⚠️ one level | ❌ Claude only |
+| **Copy files by hand** | ✅ | ✅ | ❌ | ❌ | ⚠️ manual |
+
+Melon is the only one that gives you a **committed lock file** — exact versions, git tags, and SHA-256 content hashes — so `melon install` produces the same tree on your machine, your teammate's, and in CI.
 
 **Melon gives you a single source of truth.** Define all the skills your project needs in one `melon.yaml` file, commit it alongside your code, and every developer (and your CI pipeline) gets exactly the same set of skills with a single `melon install`.
 
@@ -457,7 +471,7 @@ As AI coding assistants become more capable, teams are building and sharing libr
 
 **It works naturally with CI.** Run `melon install --frozen` in your pipeline to fail fast if the lock file is out of sync with the manifest. No surprises, no drift. With the default `vendor: true` setting, `.melon/` and the generated symlinks are committed to the repo so CI doesn't even need network access; everything is already there. If you prefer to keep deps out of git, set `vendor: false` and CI will fetch them fresh on each run using the pinned versions in `melon.lock`.
 
-**Works across your whole team and all your tools.** List the AI tools your project uses under `tool_compat` and melon places each skill into every agent's expected directory at once. One manifest, one install command, every agent ready to go.
+**Works across your whole team and every harness.** List the harnesses your project uses under `harnesses` and melon places each skill into every one's expected directory at once. One manifest, one install command, every harness ready to go.
 
 ## Why melon instead of npx skill installers?
 
@@ -467,7 +481,7 @@ Many agent skill collections ship a one-liner like `npx install-skill <name>` th
 | --- | --- | --- |
 | **Reproducibility** | `melon.lock` pins exact versions and content hashes | Each run may fetch a different version |
 | **Transitive deps** | Resolves the full dependency graph | Usually single-package only |
-| **Multiple agents** | `tool_compat` places skills for all your tools at once | Typically one target agent |
+| **Multiple harnesses** | `harnesses` places skills for every harness at once | Typically one target harness |
 | **Offline / CI** | Already-fetched deps are cached in `.melon/` | Always fetches from the network |
 | **Node.js required** | No, pure Go binary, no runtime needed | Yes |
 | **Removal** | `melon remove` unlinks symlinks and purges the cache | Usually manual |

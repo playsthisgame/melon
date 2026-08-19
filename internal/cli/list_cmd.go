@@ -228,7 +228,7 @@ func resolveTargetBases(dir string) []string {
 		}
 		sort.Strings(targetBases)
 	} else if merr == nil {
-		targetBases, _ = agents.DeriveTargets(m.ToolCompat)
+		targetBases, _ = agents.DeriveTargets(m.HarnessList())
 	}
 	if len(targetBases) == 0 {
 		targetBases = []string{".agents/skills/"}
