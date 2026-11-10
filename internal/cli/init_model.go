@@ -92,6 +92,8 @@ type initModel struct {
 	defaultName string
 	result      initResult
 	quitting    bool
+	// harnessOnly asks only for harnesses (melon init --global).
+	harnessOnly bool
 }
 
 func newInitModel(defaultName string) initModel {
@@ -132,6 +134,15 @@ func newInitModel(defaultName string) initModel {
 		agentSel:    agentSel,
 		defaultName: defaultName,
 	}
+}
+
+// newGlobalInitModel returns an init form that only asks for harnesses.
+func newGlobalInitModel() initModel {
+	m := newInitModel("global")
+	m.nameInput.Blur()
+	m.step = stepAgents
+	m.harnessOnly = true
+	return m
 }
 
 func (m initModel) Init() tea.Cmd {
@@ -189,6 +200,11 @@ func (m initModel) advance() (tea.Model, tea.Cmd) {
 			}
 		}
 		m.result.agentNames = selected
+		if m.harnessOnly {
+			m.step = stepDone
+			m.quitting = true
+			return m, tea.Quit
+		}
 		m.step = stepVendor
 		m.vendorInput.Focus()
 		return m, textinput.Blink

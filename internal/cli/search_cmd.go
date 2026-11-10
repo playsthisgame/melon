@@ -250,6 +250,17 @@ func offerAddMany(cmd *cobra.Command, paths []string, packs map[string]bool) err
 		return nil
 	}
 
+	// Offer a global install unless --global already chose it.
+	if !flagGlobal {
+		fmt.Fprint(out, "Install globally for all sessions (~/.config/melon/)? [y/N]: ")
+		answer, _ := reader.ReadString('\n')
+		answer = strings.TrimSpace(strings.ToLower(answer))
+		if answer == "y" || answer == "yes" {
+			flagGlobal = true
+			defer func() { flagGlobal = false }()
+		}
+	}
+
 	dir, err := resolveProjectDir()
 	if err != nil {
 		return err

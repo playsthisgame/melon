@@ -112,7 +112,7 @@ func runInstallCore(cmd *cobra.Command, args []string) error {
 	}
 
 	// Ensure .melon/ exists.
-	if err := os.MkdirAll(filepath.Join(dir, store.StoreDir), 0755); err != nil {
+	if err := os.MkdirAll(store.Dir(dir), 0755); err != nil {
 		return fmt.Errorf("install: create store: %w", err)
 	}
 
@@ -235,7 +235,7 @@ func runInstallCore(cmd *cobra.Command, args []string) error {
 	}
 
 	// Sync .gitignore when vendor: false.
-	if !m.IsVendored() {
+	if managesGitignore(m, dir) {
 		gitignorePath := filepath.Join(dir, ".gitignore")
 		entries := managedGitignoreEntries(resolved, m, dir)
 		added, err := gitignore.EnsureEntries(gitignorePath, entries)

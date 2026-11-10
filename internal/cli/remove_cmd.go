@@ -64,7 +64,7 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	// When vendor: false, remove the stale symlink path(s) from .gitignore now,
 	// before running install. This must happen regardless of whether install
 	// succeeds, and must not depend on the install pipeline's TTY spinner path.
-	if !m.IsVendored() {
+	if managesGitignore(m, dir) {
 		skillName := name
 		if idx := strings.LastIndex(name, "/"); idx >= 0 {
 			skillName = name[idx+1:]
@@ -115,7 +115,7 @@ func installAndPrune(cmd *cobra.Command, dir string, m manifest.Manifest, oldLoc
 		return err
 	}
 
-	if !m.IsVendored() {
+	if managesGitignore(m, dir) {
 		newLock, _ := lockfile.Load(filepath.Join(dir, "melon.lock"))
 		var entries []string
 		for _, ld := range lockfile.Diff(oldLock, newLock).Removed {
@@ -299,7 +299,7 @@ func offerRemoveMany(cmd *cobra.Command, names []string) error {
 
 	// When vendor: false, remove the stale symlink path(s) from .gitignore
 	// before running install, for the same reason as in runRemove.
-	if !m.IsVendored() {
+	if managesGitignore(m, dir) {
 		var entries []string
 		for _, n := range names {
 			skillName := n

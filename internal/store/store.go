@@ -6,9 +6,17 @@ import (
 	"strings"
 
 	"github.com/playsthisgame/melon/internal/resolver"
+	"github.com/playsthisgame/melon/internal/scope"
 )
 
-const StoreDir = ".melon"
+// StoreDir is the per-project cache directory name.
+const StoreDir = scope.ProjectStoreDir
+
+// Dir returns the cache directory for projectDir: projectDir/.melon for a
+// project, or ~/.melon/store/ when projectDir is the global root.
+func Dir(projectDir string) string {
+	return scope.StoreDir(projectDir)
+}
 
 // DirName returns the directory name used inside .melon/ for a dep with the
 // given name and version. Slashes in name are replaced with dashes.
@@ -25,7 +33,7 @@ func dirName(dep resolver.ResolvedDep) string {
 
 // InstalledPath returns the absolute path to dep's installed directory inside .melon/.
 func InstalledPath(projectDir string, dep resolver.ResolvedDep) string {
-	return filepath.Join(projectDir, StoreDir, dirName(dep))
+	return filepath.Join(Dir(projectDir), dirName(dep))
 }
 
 // EntrypointPath returns the absolute path to the dep's entrypoint markdown file.
@@ -43,7 +51,7 @@ func Remove(projectDir string, dep resolver.ResolvedDep) error {
 // Only Name and Version are populated; the caller cross-references melon.lock for
 // full dep info.
 func List(projectDir string) ([]resolver.ResolvedDep, error) {
-	storeDir := filepath.Join(projectDir, StoreDir)
+	storeDir := Dir(projectDir)
 	entries, err := os.ReadDir(storeDir)
 	if os.IsNotExist(err) {
 		return nil, nil

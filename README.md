@@ -165,18 +165,18 @@ tags: []
 
 ### Supported harnesses
 
-| Harness | Project skills directory |
-|---|---|
-| `claude-code` | `.claude/skills/` |
-| `cursor` | `.agents/skills/` |
-| `windsurf` | `.windsurf/skills/` |
-| `roo` | `.roo/skills/` |
-| `codex` | `.agents/skills/` |
-| `opencode` | `.agents/skills/` |
-| `gemini-cli` | `.agents/skills/` |
-| `github-copilot` | `.agents/skills/` |
-| `cline` | `.agents/skills/` |
-| `amp` | `.agents/skills/` |
+| Harness | Project skills directory | Global skills directory |
+|---|---|---|
+| `claude-code` | `.claude/skills/` | `~/.claude/skills/` |
+| `cursor` | `.agents/skills/` | `~/.cursor/skills/` |
+| `windsurf` | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` |
+| `roo` | `.roo/skills/` | `~/.roo/skills/` |
+| `codex` | `.agents/skills/` | `~/.codex/skills/` |
+| `opencode` | `.agents/skills/` | `~/.config/opencode/skills/` |
+| `gemini-cli` | `.agents/skills/` | `~/.gemini/skills/` |
+| `github-copilot` | `.agents/skills/` | `~/.copilot/skills/` |
+| `cline` | `.agents/skills/` | `~/.agents/skills/` |
+| `amp` | `.agents/skills/` | `~/.config/agents/skills/` |
 
 > **Renamed in v0.5.0:** `harnesses` was previously called `tool_compat`. Older
 > manifests keep working — melon reads `tool_compat` whenever `harnesses` is
@@ -216,6 +216,28 @@ melon add github.com/playsthisgame/melon-index/packs/spring-expert
 **Removing.** `melon remove <pack>` removes the pack and every member that nothing else requires. Members that are also direct dependencies, or that another pack requires, are kept. You cannot `melon remove` a skill that is only installed through a pack; remove the pack instead.
 
 Packs can depend on other packs. To publish one in an index, add `type: pack` to its index entry so `melon search` labels it `[pack]`.
+
+## Global skills
+
+Install a skill once and every session of your harness can use it, in any project. Pass `--global` (`-g`) to any command to work on the global install instead of the current project:
+
+```sh
+melon init --global           # choose the harnesses that get global skills
+melon add -g github.com/anthropics/skills/skills/skill-creator
+melon list -g
+melon remove -g skill-creator
+```
+
+| | Project | Global |
+|---|---|---|
+| Manifest and lock | `./melon.yaml`, `./melon.lock` | `~/.config/melon/melon.yaml`, `~/.config/melon/melon.lock` |
+| Cache | `./.melon/` | `~/.melon/store/` |
+| Placement | each harness's project directory | each harness's global directory (see the table above) |
+
+- `melon init --global` writes the global manifest with the `harnesses` list that every global skill is placed for. Other `--global` commands ask you to run it first.
+- If a harness's global directory already holds a skill with the same name that melon didn't create, melon leaves it alone and lists every skipped skill when the install finishes. `melon remove -g` and `melon clean -g` only ever delete links melon made.
+- `policy.allowed_sources` in the global manifest is enforced as usual. Global installs never touch `.gitignore`.
+- When you install from `melon search`, melon asks whether to install globally.
 
 ## Commands
 
