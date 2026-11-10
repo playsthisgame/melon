@@ -1,5 +1,110 @@
 skills:
 
+  - name: github.com/playsthisgame/melon-index/packs/agent-workflow
+    description: "A disciplined process for coding agents: brainstorm, plan, test-first, debug systematically, and verify before finishing (obra/superpowers)"
+    author: playsthisgame
+    type: pack
+    tags: [workflow, planning, tdd, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/cloud-infra
+    description: "Infrastructure as code and containers: Terraform (official HashiCorp), Kubernetes, and Docker"
+    author: playsthisgame
+    type: pack
+    tags: [terraform, kubernetes, devops, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/cloudflare-workers
+    description: "Build on Cloudflare: product selection, Workers best practices, Wrangler, Durable Objects, and the Agents SDK (official cloudflare/skills)"
+    author: playsthisgame
+    type: pack
+    tags: [cloudflare, serverless, edge, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/dotnet-expert
+    description: "C# and .NET: ASP.NET Core Web APIs, EF Core, performance, async, and testing (official dotnet/skills)"
+    author: playsthisgame
+    type: pack
+    tags: [dotnet, csharp, backend, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/expo-mobile
+    description: "React Native with Expo: routing, native UI, SDK upgrades, and EAS workflows (official expo/skills)"
+    author: playsthisgame
+    type: pack
+    tags: [expo, react-native, mobile, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/go-expert
+    description: "Idiomatic Go: concurrency, patterns, and table-driven testing"
+    author: playsthisgame
+    type: pack
+    tags: [go, backend, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/llm-apps
+    description: "Build LLM applications: the Claude API, MCP servers, LangChain and LangGraph agents, and RAG"
+    author: playsthisgame
+    type: pack
+    tags: [llm, agents, rag, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/nextjs-fullstack
+    description: "Full-stack Next.js: everything in react-frontend plus App Router, Supabase, shadcn/ui, and Vercel deploys"
+    author: playsthisgame
+    type: pack
+    tags: [nextjs, react, fullstack, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/office-docs
+    description: "Create and edit Word, PDF, PowerPoint, and Excel files (anthropics/skills)"
+    author: playsthisgame
+    type: pack
+    tags: [documents, office, productivity, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/pr-workflow
+    description: "Ship changes cleanly: find bugs, review code, write commits and PR descriptions, fix CI, and address review comments"
+    author: playsthisgame
+    type: pack
+    tags: [git, code-review, workflow, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/python-backend
+    description: "Python services: modern tooling (uv, ruff), type safety, async, FastAPI, Django, and pytest patterns"
+    author: playsthisgame
+    type: pack
+    tags: [python, backend, api, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/react-frontend
+    description: "Modern React frontends: Vercel's React guidance, composition patterns, design quality, TypeScript, and UI testing"
+    author: playsthisgame
+    type: pack
+    tags: [react, frontend, typescript, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/rust-expert
+    description: "Rust: ownership-aware design, async patterns, testing, and common anti-patterns"
+    author: playsthisgame
+    type: pack
+    tags: [rust, systems, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/security-audit
+    description: "Security review toolkit: Semgrep and CodeQL scans, diff review, supply-chain risk, footguns, and threat modeling"
+    author: playsthisgame
+    type: pack
+    tags: [security, audit, code-review, pack]
+    featured: true
+
+  - name: github.com/playsthisgame/melon-index/packs/spring-expert
+    description: "Build Spring Boot applications: project setup, idiomatic Spring, JUnit testing, Javadoc, API design, and PostgreSQL"
+    author: playsthisgame
+    type: pack
+    tags: [java, spring-boot, backend, pack]
+    featured: true
+
   - name: github.com/vercel-labs/skills/skills/find-skills
     description: "Discover and install skills from the open agent skills ecosystem"
     author: vercel-labs
@@ -24,13 +129,13 @@ skills:
     tags: [design, frontend, ui]
     featured: true
 
-  - name: github.com/remotion-dev/skills/skills/remotion
-    description: "Best practices for building video with Remotion"
+  - name: github.com/remotion-dev/skills/skills/remotion-best-practices
+    description: "Remotion best practices for building video in React, routing to the right Remotion skill for each task"
     author: remotion-dev
     tags: [video, remotion, frontend]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-ai
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-ai
     description: "Azure AI services integration patterns and guidance"
     author: microsoft
     tags: [azure, ai, cloud]
@@ -42,7 +147,7 @@ skills:
     tags: [browser, automation, scraping]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-messaging
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-messaging
     description: "Azure messaging services — Service Bus, Event Grid, Event Hubs"
     author: microsoft
     tags: [azure, messaging, cloud]
@@ -54,9 +159,9 @@ skills:
     tags: [skills, productivity, meta]
     featured: true
 
-  - name: github.com/inferen-sh/skills/tools/image/ai-image-generation
+  - name: github.com/inference-sh/skills/tools/image/ai-image-generation
     description: "AI image generation workflows and prompt engineering"
-    author: inferen-sh
+    author: inference-sh
     tags: [ai, image-generation, creative]
     featured: true
 
@@ -66,15 +171,9 @@ skills:
     tags: [azure, ai, foundry]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-hosted-copilot-sdk
-    description: "Azure-hosted GitHub Copilot SDK integration patterns"
-    author: microsoft
-    tags: [azure, copilot, sdk]
-    featured: true
-
-  - name: github.com/inferen-sh/skills/tools/video/ai-video-generation
+  - name: github.com/inference-sh/skills/tools/video/ai-video-generation
     description: "AI video generation workflows and tooling"
-    author: inferen-sh
+    author: inference-sh
     tags: [ai, video, creative]
     featured: true
 
@@ -90,8 +189,8 @@ skills:
     tags: [react, composition, patterns]
     featured: true
 
-  - name: github.com/nextlevelbuilder/ui-ux-pro-max-skill
-    description: "Professional UI/UX design and implementation techniques"
+  - name: github.com/nextlevelbuilder/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max
+    description: "UI/UX design intelligence for designing, building, and reviewing web, mobile, and desktop interfaces"
     author: nextlevelbuilder
     tags: [ui, ux, design]
     featured: true
@@ -108,7 +207,7 @@ skills:
     tags: [productivity, planning, creativity]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-compute
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-compute
     description: "Azure compute resources — VMs, AKS, App Service guidance"
     author: microsoft
     tags: [azure, compute, cloud]
@@ -126,7 +225,7 @@ skills:
     tags: [azure, migration, cloud]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-cloud-migrate
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-cloud-migrate
     description: "Migrating workloads to Azure cloud infrastructure"
     author: microsoft
     tags: [azure, migration, cloud]
@@ -156,15 +255,15 @@ skills:
     tags: [pdf, documents, productivity]
     featured: true
 
-  - name: github.com/inferen-sh/skills/tools/audio/elevenlabs-tts
+  - name: github.com/inference-sh/skills/tools/audio/elevenlabs-tts
     description: "Text-to-speech audio generation via ElevenLabs"
-    author: inferen-sh
+    author: inference-sh
     tags: [tts, audio, ai]
     featured: true
 
-  - name: github.com/inferen-sh/skills/tools/audio/elevenlabs-music
+  - name: github.com/inference-sh/skills/tools/audio/elevenlabs-music
     description: "AI music generation via ElevenLabs"
-    author: inferen-sh
+    author: inference-sh
     tags: [music, audio, ai]
     featured: true
 
@@ -184,12 +283,6 @@ skills:
     description: "Create and edit PowerPoint presentations"
     author: anthropics
     tags: [pptx, documents, productivity]
-    featured: true
-
-  - name: github.com/vercel-labs/next-skills/skills/next-best-practices
-    description: "Next.js best practices for routing, rendering, and performance"
-    author: vercel-labs
-    tags: [nextjs, react, frontend]
     featured: true
 
   - name: github.com/obra/superpowers/skills/systematic-debugging
@@ -222,7 +315,7 @@ skills:
     tags: [simplicity, code-quality, workflow]
     featured: true
 
-  - name: github.com/squirrelscan/skills/audit-website
+  - name: github.com/squirrelscan/skills/skills/audit-website
     description: "Website auditing for performance, accessibility, and best practices"
     author: squirrelscan
     tags: [audit, web, performance]
@@ -258,8 +351,8 @@ skills:
     tags: [code-review, workflow, collaboration]
     featured: true
 
-  - name: github.com/pbakaus/impeccable/source/skills/frontend-design
-    description: "Opinionated frontend design standards for polished UIs"
+  - name: github.com/pbakaus/impeccable/plugin/skills/impeccable
+    description: "Design vocabulary for frontends — design, redesign, critique, audit, polish, and animate websites and app UI"
     author: pbakaus
     tags: [frontend, design, ui]
     featured: true
@@ -270,22 +363,10 @@ skills:
     tags: [planning, workflow, productivity]
     featured: true
 
-  - name: github.com/pbakaus/impeccable/source/skills/polish
-    description: "Polish and refine code and UI to a high standard"
-    author: pbakaus
-    tags: [quality, refactoring, ui]
-    featured: true
-
   - name: github.com/coreyhaines31/marketingskills/skills/content-strategy
     description: "Content strategy frameworks for planning and distributing content"
     author: coreyhaines31
     tags: [content, marketing, strategy]
-    featured: true
-
-  - name: github.com/pbakaus/impeccable/source/skills/critique
-    description: "Critical evaluation of code, design, and decisions"
-    author: pbakaus
-    tags: [critique, quality, review]
     featured: true
 
   - name: github.com/obra/superpowers/skills/receiving-code-review
@@ -300,13 +381,13 @@ skills:
     tags: [golang, best-practices, backend]
     featured: true
 
-  - name: github.com/affaan-m/everything-claude-code/skills/golang-patterns
+  - name: github.com/affaan-m/ECC/skills/golang-patterns
     description: "Common Go design patterns and architectural approaches"
     author: affaan-m
     tags: [golang, patterns, architecture]
     featured: true
 
-  - name: github.com/affaan-m/everything-claude-code/skills/golang-testing
+  - name: github.com/affaan-m/ECC/skills/golang-testing
     description: "Go testing strategies, table-driven tests, and test utilities"
     author: affaan-m
     tags: [golang, testing, quality]
@@ -462,67 +543,61 @@ skills:
     tags: [database, supabase, backend, postgres, auth]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-kubernetes
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-kubernetes
     description: "Plan and configure production-ready AKS clusters with security, observability, and cost optimization"
     author: microsoft
     tags: [azure, kubernetes, devops, infrastructure, cloud]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-deploy
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-deploy
     description: "Execute Azure deployments via azd, Terraform, and az deployment commands with error recovery"
     author: microsoft
     tags: [azure, deployment, devops, terraform, infrastructure]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-storage
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-storage
     description: "Manage Azure Storage Services — Blob, File Shares, Queue, Table, and Data Lake"
     author: microsoft
     tags: [azure, storage, cloud, infrastructure]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-diagnostics
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-diagnostics
     description: "Debug Azure production issues via AppLens, Azure Monitor, and resource health"
     author: microsoft
     tags: [azure, monitoring, debugging, observability]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-compliance
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-compliance
     description: "Perform Azure compliance and security assessments — validate resources and identify misconfigurations"
     author: microsoft
     tags: [azure, security, compliance, cloud]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-rbac
-    description: "Identify Azure RBAC roles following least-privilege principles and generate role assignment code"
-    author: microsoft
-    tags: [azure, security, iam, rbac]
-    featured: true
-
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/appinsights-instrumentation
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/appinsights-instrumentation
     description: "Add Azure Application Insights telemetry to web apps — ASP.NET Core and Node.js"
     author: microsoft
     tags: [azure, monitoring, observability, telemetry]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-validate
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-validate
     description: "Pre-deployment validation for Azure readiness — checks Bicep/Terraform, RBAC, and managed identity permissions"
     author: microsoft
     tags: [azure, deployment, validation, infrastructure]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-prepare
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-prepare
     description: "Prepare Azure applications for deployment — generates Bicep/Terraform, azure.yaml, and Dockerfiles"
     author: microsoft
     tags: [azure, deployment, infrastructure, docker]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/entra-app-registration
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/entra-app-registration
     description: "Guide Microsoft Entra ID app registration, OAuth 2.0 authentication, and MSAL integration"
     author: microsoft
     tags: [azure, auth, oauth, security, microsoft-entra]
     featured: true
 
-  - name: github.com/microsoft/github-copilot-for-azure/plugin/skills/azure-resource-lookup
+  - name: github.com/microsoft/github-copilot-for-azure/plugins/azure-skills/skills/azure-resource-lookup
     description: "List and find Azure resources across subscriptions — inventory, tag analysis, and orphaned resource discovery"
     author: microsoft
     tags: [azure, cloud, inventory, infrastructure]
@@ -570,9 +645,9 @@ skills:
     tags: [ai, evaluation, quality, agentic]
     featured: true
 
-  - name: github.com/forrestchang/andrej-karpathy-skills/skills/karpathy-guidelines
+  - name: github.com/multica-ai/andrej-karpathy-skills/skills/karpathy-guidelines
     description: A single CLAUDE.md file to improve Claude Code behavior, derived from Andrej Karpathy's observations on LLM coding pitfalls.
-    author: github.com/forrestchang
+    author: multica-ai
     tags: [ai, insights, guidelines]
     featured: true
 
@@ -600,7 +675,7 @@ skills:
     tags: [code-review, productivity, compression, workflow]
     featured: true
 
-  - name: github.com/JuliusBrussee/caveman/skills/compress
+  - name: github.com/JuliusBrussee/caveman/skills/caveman-compress
     description: "Compresses natural language memory files (CLAUDE.md, todos, preferences) into caveman format to reduce input tokens (~46% savings) while preserving code, URLs, and technical terms"
     author: JuliusBrussee
     tags: [productivity, compression, memory, tokens]
@@ -612,25 +687,25 @@ skills:
     tags: [azure, cloud, architecture, diagrams, infrastructure]
     featured: true
 
-  - name: github.com/google-labs-code/stitch-skills/skills/design-md
+  - name: github.com/google-labs-code/stitch-skills/plugins/stitch-utilities/skills/design-md
     description: "Analyze Stitch projects and synthesize a semantic design system into DESIGN.md files"
     author: google-labs-code
     tags: [design, stitch, design-system, ui]
     featured: true
 
-  - name: github.com/google-labs-code/stitch-skills/skills/enhance-prompt
+  - name: github.com/google-labs-code/stitch-skills/plugins/stitch-utilities/skills/enhance-prompt
     description: "Transform vague UI ideas into polished, Stitch-optimized prompts with improved specificity and design system context"
     author: google-labs-code
     tags: [prompt-engineering, stitch, ui, design]
     featured: true
 
-  - name: github.com/google-labs-code/stitch-skills/skills/react-components
+  - name: github.com/google-labs-code/stitch-skills/plugins/stitch-build/skills/react-components
     description: "Convert Stitch designs into modular Vite and React components using AST-based validation"
     author: google-labs-code
     tags: [react, stitch, frontend, components]
     featured: true
 
-  - name: github.com/google-labs-code/stitch-skills/skills/stitch-loop
+  - name: github.com/google-labs-code/stitch-skills/plugins/stitch-utilities/skills/stitch-loop
     description: "Iteratively build websites using Google Stitch with an autonomous baton-passing loop pattern"
     author: google-labs-code
     tags: [stitch, frontend, automation, workflow]
@@ -646,12 +721,6 @@ skills:
     description: "Guides and best practices for Neon Serverless Postgres — setup, connection methods, branching, autoscaling, scale-to-zero, and platform APIs"
     author: neondatabase
     tags: [postgres, database, serverless, neon, backend]
-    featured: true
-
-  - name: github.com/vercel/ai/skills/use-ai-sdk
-    description: "Build AI-powered features with the Vercel AI SDK — text generation, streaming, tool calling, agents, RAG, and multi-provider support"
-    author: vercel
-    tags: [ai, vercel, sdk, streaming, llm]
     featured: true
 
   - name: github.com/wshobson/agents/plugins/python-development/skills/python-performance-optimization
@@ -792,7 +861,7 @@ skills:
     tags: [firebase, hosting, deployment, google, frontend]
     featured: true
 
-  - name: github.com/sickn33/antigravity-awesome-skills/skills/docker-expert
+  - name: github.com/sickn33/agentic-awesome-skills/skills/docker-expert
     description: "Advanced Docker containerization expert — optimization, security hardening, multi-stage builds, and production deployment strategies"
     author: sickn33
     tags: [docker, containers, devops, security, infrastructure]
@@ -1068,9 +1137,9 @@ skills:
     tags: [rust, mcp, developer-tools, server, code-generation]
     featured: true
 
-  - name: github.com/zhanghandong/rust-skills/skills/m15-anti-pattern
+  - name: github.com/actionbook/rust-skills/skills/m15-anti-pattern
     description: "Identify and fix Rust anti-patterns — borrow checker fights, excessive cloning, unwrap in production, and other common pitfalls"
-    author: zhanghandong
+    author: actionbook
     tags: [rust, anti-patterns, code-review, code-quality]
     featured: true
 
@@ -1080,7 +1149,7 @@ skills:
     tags: [rust, systems-programming, backend, best-practices, code-generation]
     featured: true
 
-  - name: github.com/affaan-m/everything-claude-code/skills/rust-testing
+  - name: github.com/affaan-m/ECC/skills/rust-testing
     description: "Rust testing patterns — unit tests, integration tests, async testing, property-based testing, mocking, and coverage following TDD methodology"
     author: affaan-m
     tags: [rust, testing, tdd, quality]
@@ -1104,7 +1173,7 @@ skills:
     tags: [mermaid, markdown]
     featured: true
 
-  - name: github.com/mattpocock/skills/skills/engineering/diagnose
+  - name: github.com/mattpocock/skills/skills/engineering/diagnosing-bugs
     description: "Disciplined diagnosis loop for hard bugs and performance regressions — reproduce, minimise, hypothesise, instrument, fix, regression-test"
     author: mattpocock
     tags: [debugging, workflow, productivity]
@@ -1134,14 +1203,14 @@ skills:
     tags: [tdd, testing, workflow]
     featured: true
 
-  - name: github.com/mattpocock/skills/skills/engineering/to-issues
-    description: "Break a plan, spec, or PRD into independently-grabbable issues on the project issue tracker using tracer-bullet vertical slices"
+  - name: github.com/mattpocock/skills/skills/engineering/to-tickets
+    description: "Break a plan, spec, or conversation into tracer-bullet tickets with blocking edges, published to your issue tracker"
     author: mattpocock
     tags: [planning, project-management, workflow]
     featured: true
 
-  - name: github.com/mattpocock/skills/skills/engineering/to-prd
-    description: "Turn the current conversation context and codebase understanding into a PRD and publish it to the project issue tracker"
+  - name: github.com/mattpocock/skills/skills/engineering/to-spec
+    description: "Turn the current conversation into a spec and publish it to the project issue tracker"
     author: mattpocock
     tags: [planning, documentation, workflow]
     featured: true
@@ -1150,12 +1219,6 @@ skills:
     description: "Triage issues through a state machine of triage roles — create, review, and move issues through incoming, ready-to-implement, and blocked states"
     author: mattpocock
     tags: [project-management, workflow, issues]
-    featured: true
-
-  - name: github.com/mattpocock/skills/skills/engineering/zoom-out
-    description: "Prompt the agent to zoom out and map all relevant modules and callers using the project's domain glossary — for unfamiliar code areas"
-    author: mattpocock
-    tags: [navigation, codebase, workflow]
     featured: true
 
   - name: github.com/mattpocock/skills/skills/misc/git-guardrails-claude-code
@@ -1182,37 +1245,19 @@ skills:
     tags: [git, hooks, workflow]
     featured: true
 
-  - name: github.com/mattpocock/skills/skills/personal/edit-article
-    description: "Edit and improve articles by restructuring sections, respecting information dependencies, and tightening prose"
-    author: mattpocock
-    tags: [writing, editing, content]
-    featured: true
-
-  - name: github.com/mattpocock/skills/skills/personal/obsidian-vault
-    description: "Search, create, and manage notes in an Obsidian vault with wikilinks and index notes"
-    author: mattpocock
-    tags: [notes, obsidian, productivity]
-    featured: true
-
-  - name: github.com/mattpocock/skills/skills/productivity/caveman
-    description: "Ultra-compressed communication mode — cuts token usage ~75% by dropping filler and pleasantries while keeping full technical accuracy"
-    author: mattpocock
-    tags: [productivity, tokens, communication]
-    featured: true
-
   - name: github.com/mattpocock/skills/skills/productivity/grill-me
     description: "Interview the user relentlessly about a plan or design, walking down each branch of the decision tree until reaching shared understanding"
     author: mattpocock
     tags: [planning, workflow, productivity]
     featured: true
 
-  - name: github.com/mattpocock/skills/skills/productivity/write-a-skill
-    description: "Create new agent skills with proper structure, progressive disclosure, and bundled resources"
+  - name: github.com/mattpocock/skills/skills/productivity/writing-for-agents
+    description: "Write documents for agents — creating or editing skills, AGENTS.md, and CLAUDE.md"
     author: mattpocock
     tags: [meta, skills, developer-tools]
     featured: true
 
-  - name: github.com/mattpocock/skills/skills/in-progress/handoff
+  - name: github.com/mattpocock/skills/skills/productivity/handoff
     description: "Compact the current conversation into a handoff document for another agent to pick up"
     author: mattpocock
     tags: [workflow, agentic, productivity, handoff]
@@ -1386,7 +1431,7 @@ skills:
     tags: [release, devops, delivery]
     featured: true
 
-  - name: github.com/blader/humanizer/skills/humanizer
+  - name: github.com/blader/humanizer
     description: "Remove the tells of AI-generated writing — em-dash tics, hedging, listicle rhythm — from any text"
     author: blader
     tags: [writing, editing, content]
@@ -1402,36 +1447,6 @@ skills:
     description: "Give the agent design taste — brief inference, design-system mapping, and pre-flight checks for modern frontends"
     author: Leonxlnx
     tags: [design, frontend, ui]
-    featured: true
-
-  - name: github.com/Leonxlnx/taste-skill/skills/minimalist-skill
-    description: "Editorial, Notion/Linear-style minimalist UI with restrained palettes and crisp structure"
-    author: Leonxlnx
-    tags: [design, frontend, ui]
-    featured: true
-
-  - name: github.com/Leonxlnx/taste-skill/skills/brutalist-skill
-    description: "Industrial brutalist UI — Swiss typography, sharp contrast, and experimental layouts"
-    author: Leonxlnx
-    tags: [design, frontend, ui]
-    featured: true
-
-  - name: github.com/Leonxlnx/taste-skill/skills/redesign-skill
-    description: "Audit an existing UI, then fix layout, spacing, hierarchy, and styling"
-    author: Leonxlnx
-    tags: [design, frontend, refactoring]
-    featured: true
-
-  - name: github.com/Leonxlnx/taste-skill/skills/image-to-code-skill
-    description: "Image-first pipeline — generate site references, analyze them, then implement a matching frontend"
-    author: Leonxlnx
-    tags: [design, frontend, codegen]
-    featured: true
-
-  - name: github.com/Leonxlnx/taste-skill/skills/brandkit
-    description: "Generate brand identity boards covering logos, palettes, and type applications"
-    author: Leonxlnx
-    tags: [design, branding, marketing]
     featured: true
 
   - name: github.com/zarazhangrui/frontend-slides
@@ -1636,4 +1651,424 @@ skills:
     description: "Cheminformatics with RDKit — molecule parsing, descriptors, fingerprints, and substructure search"
     author: K-Dense-AI
     tags: [chemistry, python, science]
+    featured: true
+
+  - name: github.com/cloudflare/skills/skills/cloudflare
+    description: "Choose the right Cloudflare products for apps, APIs, AI agents, storage, and networking"
+    author: cloudflare
+    tags: [cloudflare, architecture, edge]
+    featured: true
+
+  - name: github.com/cloudflare/skills/skills/workers-best-practices
+    description: "Cloudflare Workers best practices for writing, reviewing, and configuring production Workers"
+    author: cloudflare
+    tags: [cloudflare, serverless, workers]
+    featured: true
+
+  - name: github.com/cloudflare/skills/skills/wrangler
+    description: "Run and troubleshoot Wrangler CLI commands for local dev, deploys, and Cloudflare resources"
+    author: cloudflare
+    tags: [cloudflare, cli, deployment]
+    featured: true
+
+  - name: github.com/cloudflare/skills/skills/durable-objects
+    description: "Build, debug, and review Cloudflare Durable Objects for persistent state and coordination"
+    author: cloudflare
+    tags: [cloudflare, serverless, state]
+    featured: true
+
+  - name: github.com/cloudflare/skills/skills/agents-sdk
+    description: "Build, debug, and review AI agents on Cloudflare with the Agents SDK"
+    author: cloudflare
+    tags: [cloudflare, agents, ai]
+    featured: true
+
+  - name: github.com/cloudflare/skills/skills/web-perf
+    description: "Audit and optimize page load performance, Core Web Vitals, and Lighthouse scores"
+    author: cloudflare
+    tags: [performance, web, frontend]
+    featured: true
+
+  - name: github.com/expo/skills/plugins/expo/skills/expo-overview
+    description: "Entry point for Expo and EAS tasks — routes to the right expo-* or eas-* skill"
+    author: expo
+    tags: [expo, react-native, mobile]
+    featured: true
+
+  - name: github.com/expo/skills/plugins/expo/skills/expo-router
+    description: "File-based navigation with Expo Router — routes, groups, dynamic routes, and links"
+    author: expo
+    tags: [expo, react-native, navigation]
+    featured: true
+
+  - name: github.com/expo/skills/plugins/expo/skills/expo-upgrade
+    description: "Upgrade Expo SDK versions and fix the dependency issues that come with it"
+    author: expo
+    tags: [expo, react-native, upgrade]
+    featured: true
+
+  - name: github.com/expo/skills/plugins/expo/skills/expo-native-ui
+    description: "Build native-feeling Expo screens with Apple HIG styling, native controls, and SF Symbols"
+    author: expo
+    tags: [expo, mobile, ui]
+    featured: true
+
+  - name: github.com/expo/skills/plugins/expo/skills/eas-workflows
+    description: "Write and understand EAS workflow YAML for Expo CI/CD"
+    author: expo
+    tags: [expo, ci-cd, mobile]
+    featured: true
+
+  - name: github.com/stripe/ai/skills/stripe-best-practices
+    description: "Stripe integration guidance — API selection, sandboxes, and production-ready payment flows"
+    author: stripe
+    tags: [stripe, payments, api]
+    featured: true
+
+  - name: github.com/stripe/ai/skills/upgrade-stripe
+    description: "Upgrade Stripe API versions, webhooks, server SDKs, Stripe.js, and mobile SDKs"
+    author: stripe
+    tags: [stripe, payments, upgrade]
+    featured: true
+
+  - name: github.com/stripe/ai/skills/stripe-docs
+    description: "Search and read Stripe documentation and API reference from the agent"
+    author: stripe
+    tags: [stripe, payments, docs]
+    featured: true
+
+  - name: github.com/getsentry/skills/skills/code-review
+    description: "Review pull requests following Sentry's engineering practices"
+    author: getsentry
+    tags: [code-review, quality, git]
+    featured: true
+
+  - name: github.com/getsentry/skills/skills/find-bugs
+    description: "Find bugs, security issues, and quality problems in your local branch changes"
+    author: getsentry
+    tags: [code-review, debugging, security]
+    featured: true
+
+  - name: github.com/getsentry/skills/skills/security-review
+    description: "Security-focused code review for common vulnerability classes"
+    author: getsentry
+    tags: [security, code-review, audit]
+    featured: true
+
+  - name: github.com/getsentry/skills/skills/commit
+    description: "Write Sentry-style conventional commit messages with issue references"
+    author: getsentry
+    tags: [git, commits, workflow]
+    featured: true
+
+  - name: github.com/getsentry/skills/skills/pr-writer
+    description: "Write and refresh reviewer-facing pull request titles and descriptions"
+    author: getsentry
+    tags: [git, pull-requests, workflow]
+    featured: true
+
+  - name: github.com/getsentry/skills/skills/django-perf-review
+    description: "Django performance review — N+1 queries, queryset efficiency, and slow views"
+    author: getsentry
+    tags: [django, python, performance]
+    featured: true
+
+  - name: github.com/trailofbits/skills/plugins/static-analysis/skills/semgrep
+    description: "Run a Semgrep security scan with language detection and ruleset selection"
+    author: trailofbits
+    tags: [security, static-analysis, semgrep]
+    featured: true
+
+  - name: github.com/trailofbits/skills/plugins/static-analysis/skills/codeql
+    description: "Find vulnerabilities with CodeQL interprocedural data-flow and taint analysis"
+    author: trailofbits
+    tags: [security, static-analysis, codeql]
+    featured: true
+
+  - name: github.com/trailofbits/skills/plugins/property-based-testing/skills/property-based-testing
+    description: "Write and debug property-based tests with Hypothesis, fast-check, proptest, jqwik, and more"
+    author: trailofbits
+    tags: [testing, property-based, quality]
+    featured: true
+
+  - name: github.com/trailofbits/skills/plugins/differential-review/skills/differential-review
+    description: "Security-focused review of code changes with blast-radius analysis"
+    author: trailofbits
+    tags: [security, code-review, audit]
+    featured: true
+
+  - name: github.com/trailofbits/skills/plugins/supply-chain-risk-auditor/skills/supply-chain-risk-auditor
+    description: "Audit dependencies for advisories, abandoned packages, and supply-chain risk"
+    author: trailofbits
+    tags: [security, dependencies, supply-chain]
+    featured: true
+
+  - name: github.com/trailofbits/skills/plugins/sharp-edges/skills/sharp-edges
+    description: "Spot error-prone APIs, dangerous configs, and footgun designs that invite security bugs"
+    author: trailofbits
+    tags: [security, api-design, review]
+    featured: true
+
+  - name: github.com/trailofbits/skills/plugins/modern-python/skills/modern-python
+    description: "Set up Python projects with modern tooling — uv, ruff, and ty"
+    author: trailofbits
+    tags: [python, tooling, uv]
+    featured: true
+
+  - name: github.com/trailofbits/skills/plugins/mutation-testing/skills/mutation-testing
+    description: "Configure mutation testing campaigns and investigate surviving mutants"
+    author: trailofbits
+    tags: [testing, mutation-testing, quality]
+    featured: true
+
+  - name: github.com/trailofbits/skills/plugins/gh-cli/skills/gh-cli
+    description: "Use the authenticated gh CLI for GitHub access instead of curl or web fetches"
+    author: trailofbits
+    tags: [github, cli, workflow]
+    featured: true
+
+  - name: github.com/huggingface/skills/skills/hf-cli
+    description: "Manage models, datasets, Spaces, and jobs on the Hugging Face Hub with the hf CLI"
+    author: huggingface
+    tags: [huggingface, ml, cli]
+    featured: true
+
+  - name: github.com/huggingface/skills/skills/huggingface-datasets
+    description: "Explore, filter, and download Hugging Face datasets via the Dataset Viewer API"
+    author: huggingface
+    tags: [huggingface, datasets, ml]
+    featured: true
+
+  - name: github.com/huggingface/skills/skills/huggingface-llm-trainer
+    description: "Fine-tune language and vision models with TRL or Unsloth on Hugging Face Jobs"
+    author: huggingface
+    tags: [huggingface, fine-tuning, ml]
+    featured: true
+
+  - name: github.com/huggingface/skills/skills/huggingface-gradio
+    description: "Build Gradio web UIs and demos in Python"
+    author: huggingface
+    tags: [huggingface, gradio, python]
+    featured: true
+
+  - name: github.com/huggingface/skills/skills/huggingface-spaces
+    description: "Build, deploy, and maintain apps on Hugging Face Spaces"
+    author: huggingface
+    tags: [huggingface, deployment, ml]
+    featured: true
+
+  - name: github.com/huggingface/skills/skills/transformers-js
+    description: "Run ML models directly in JavaScript and TypeScript with Transformers.js"
+    author: huggingface
+    tags: [huggingface, javascript, ml]
+    featured: true
+
+  - name: github.com/openai/skills/skills/.curated/playwright
+    description: "Automate a real browser from the terminal — navigation, forms, screenshots, and UI-flow debugging"
+    author: openai
+    tags: [browser, playwright, testing]
+    featured: true
+
+  - name: github.com/openai/skills/skills/.curated/gh-fix-ci
+    description: "Debug and fix failing GitHub Actions checks on a pull request using gh"
+    author: openai
+    tags: [github, ci-cd, debugging]
+    featured: true
+
+  - name: github.com/openai/skills/skills/.curated/gh-address-comments
+    description: "Work through review comments on the current branch's open pull request"
+    author: openai
+    tags: [github, code-review, workflow]
+    featured: true
+
+  - name: github.com/openai/skills/skills/.curated/security-threat-model
+    description: "Repository-grounded threat modeling — trust boundaries, abuse paths, and mitigations"
+    author: openai
+    tags: [security, threat-modeling, architecture]
+    featured: true
+
+  - name: github.com/openai/skills/skills/.curated/jupyter-notebook
+    description: "Create and edit Jupyter notebooks for experiments, explorations, and tutorials"
+    author: openai
+    tags: [jupyter, python, data]
+    featured: true
+
+  - name: github.com/openai/skills/skills/.curated/figma-implement-design
+    description: "Turn Figma designs into production UI code with 1:1 visual fidelity"
+    author: openai
+    tags: [figma, design, frontend]
+    featured: true
+
+  - name: github.com/dotnet/skills/plugins/dotnet-data/skills/optimizing-ef-core-queries
+    description: "Review and optimize Entity Framework Core data access for performance and correctness"
+    author: dotnet
+    tags: [dotnet, ef-core, database]
+    featured: true
+
+  - name: github.com/dotnet/skills/plugins/dotnet-diag/skills/analyzing-dotnet-performance
+    description: "Scan .NET code for ~50 performance anti-patterns across async, memory, LINQ, and I/O"
+    author: dotnet
+    tags: [dotnet, performance, diagnostics]
+    featured: true
+
+  - name: github.com/langchain-ai/langchain-skills/config/skills/langchain-fundamentals
+    description: "Build LangChain agents with tools and middleware"
+    author: langchain-ai
+    tags: [langchain, agents, llm]
+    featured: true
+
+  - name: github.com/langchain-ai/langchain-skills/config/skills/langgraph-fundamentals
+    description: "LangGraph essentials — StateGraph, nodes, edges, streaming, and error handling"
+    author: langchain-ai
+    tags: [langgraph, agents, llm]
+    featured: true
+
+  - name: github.com/langchain-ai/langchain-skills/config/skills/langchain-rag
+    description: "Build retrieval-augmented generation with LangChain loaders, splitters, embeddings, and vector stores"
+    author: langchain-ai
+    tags: [langchain, rag, llm]
+    featured: true
+
+  - name: github.com/langchain-ai/langchain-skills/config/skills/deep-agents-core
+    description: "Build Deep Agents applications with create_deep_agent and the agent harness"
+    author: langchain-ai
+    tags: [langchain, agents, llm]
+    featured: true
+
+  - name: github.com/langchain-ai/langchain-skills/config/skills/langgraph-persistence
+    description: "Persist LangGraph state, conversation memory, and checkpoints"
+    author: langchain-ai
+    tags: [langgraph, persistence, llm]
+    featured: true
+
+  - name: github.com/obra/superpowers/skills/diagnosing-superpowers
+    description: "Diagnose why a superpowers session went wrong — repeated work, ignored plans, or skipped skills"
+    author: obra
+    tags: [workflow, debugging, meta]
+    featured: true
+
+  - name: github.com/addyosmani/agent-skills/skills/constraint-driven-development
+    description: "Write a project's quality bar down as a contract so agents don't quietly lower it"
+    author: addyosmani
+    tags: [engineering, quality, workflow]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/java-architect
+    description: "Enterprise Java with Spring Boot 3.x, microservices, and reactive programming"
+    author: jeffallan
+    tags: [java, spring-boot, backend]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/kotlin-specialist
+    description: "Idiomatic Kotlin — coroutines, Flow, multiplatform, and Compose"
+    author: jeffallan
+    tags: [kotlin, android, backend]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/python-pro
+    description: "Type-safe, async Python 3.11+ with robust error handling"
+    author: jeffallan
+    tags: [python, typing, backend]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/fastapi-expert
+    description: "High-performance async APIs with FastAPI and Pydantic v2"
+    author: jeffallan
+    tags: [python, fastapi, api]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/django-expert
+    description: "Django web apps and REST APIs with Django REST Framework"
+    author: jeffallan
+    tags: [python, django, backend]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/typescript-pro
+    description: "Advanced TypeScript types, type guards, branded types, and end-to-end type safety"
+    author: jeffallan
+    tags: [typescript, types, frontend]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/react-expert
+    description: "React 18+ components, hooks, state, and performance"
+    author: jeffallan
+    tags: [react, frontend, javascript]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/nextjs-developer
+    description: "Next.js 14+ with App Router, server components, and server actions"
+    author: jeffallan
+    tags: [nextjs, react, frontend]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/postgres-pro
+    description: "PostgreSQL query tuning, EXPLAIN analysis, JSONB, and replication"
+    author: jeffallan
+    tags: [postgres, database, sql]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/sql-pro
+    description: "Optimize SQL queries, design schemas, and fix slow database performance"
+    author: jeffallan
+    tags: [sql, database, performance]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/kubernetes-specialist
+    description: "Kubernetes deployments, manifests, security policies, and workload management"
+    author: jeffallan
+    tags: [kubernetes, devops, infrastructure]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/terraform-engineer
+    description: "Infrastructure as code with Terraform across AWS, Azure, and GCP"
+    author: jeffallan
+    tags: [terraform, iac, cloud]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/microservices-architect
+    description: "Design distributed systems, split monoliths into services, and pick communication patterns"
+    author: jeffallan
+    tags: [architecture, microservices, backend]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/api-designer
+    description: "Design REST and GraphQL APIs with OpenAPI specs, versioning, and resource modeling"
+    author: jeffallan
+    tags: [api, design, openapi]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/rag-architect
+    description: "Design production RAG systems — chunking, embeddings, vector stores, and hybrid search"
+    author: jeffallan
+    tags: [rag, llm, ai]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/swift-expert
+    description: "iOS and macOS apps with SwiftUI, async/await, and protocol-oriented design"
+    author: jeffallan
+    tags: [swift, ios, mobile]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/flutter-expert
+    description: "Cross-platform apps with Flutter 3 and Dart — widgets, state management, and routing"
+    author: jeffallan
+    tags: [flutter, dart, mobile]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/playwright-expert
+    description: "End-to-end tests with Playwright and fixing flaky browser tests"
+    author: jeffallan
+    tags: [playwright, testing, e2e]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/security-reviewer
+    description: "Security audits with severity-rated findings and remediation guidance"
+    author: jeffallan
+    tags: [security, audit, code-review]
+    featured: true
+
+  - name: github.com/jeffallan/claude-skills/skills/test-master
+    description: "Test strategy, mocking, coverage analysis, and test architecture"
+    author: jeffallan
+    tags: [testing, quality, coverage]
     featured: true
