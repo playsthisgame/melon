@@ -70,7 +70,7 @@ BFS already enqueues all direct deps before any transitive ones, so a direct dep
 
 This incidentally fixes a latent bug: `add` of a plain skill that declares transitive deps currently skips them.
 
-Symmetrically, `remove` uses the full pipeline (save manifest → `runInstallCore`) when the removed dep's lock entry is `type: pack` or when any lock entry lists it in `via`; otherwise it keeps the `removeSingleDep` fast path. Interactive multi-remove (`offerRemoveMany`) already runs a full install and needs no change.
+Symmetrically, `remove` uses the full pipeline (save manifest → `runInstallCore`) when the removed dep's lock entry is `type: pack` or when any lock entry lists it in `via`; otherwise it keeps the `removeSingleDep` fast path. Interactive multi-remove (`offerRemoveMany`) applies the same rule: if any selected dep is a pack or has dependents, it runs the full pipeline instead of looping over `removeSingleDep`. Its confirmation prompt computes, from the lock graph, how many skills each pack brings in and how many would actually be pruned versus kept because something else still needs them.
 
 *Alternative considered:* always using the full pipeline in `add`/`remove`. Simpler, but it re-resolves every dependency (one manifest fetch + tag lookup per dep), which noticeably slows down the common single-skill case.
 

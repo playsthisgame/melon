@@ -281,7 +281,7 @@ func printDepTree(out io.Writer, deps []lockfile.LockedDep) {
 	print = func(d lockfile.LockedDep, depth int, seen map[string]bool) {
 		label := ""
 		if d.IsPack() {
-			label = "  (pack)"
+			label = "  " + packLabel.Render("(pack)")
 		}
 		fmt.Fprintf(out, "%s%s  %s%s\n", strings.Repeat("  ", depth+1), d.Name, d.Version, label)
 		if seen[d.Name] {

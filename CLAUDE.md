@@ -65,7 +65,7 @@ openspec/                 — BDD-style specs and archived change proposals
 - **`CGO_ENABLED=0`** — pure Go, no C deps.
 - **Git required at runtime:** Fetcher shells out to `git` via `exec.Command`. Modern git with sparse-checkout support is needed.
 - **`GITHUB_TOKEN`** env var: Used by the resolver and GitHub client for higher API rate limits. Not required but recommended.
-- **Agent conventions** are hardcoded in `internal/agents/agents.go`. Adding a new AI tool means adding an entry there.
+- **Agent conventions** are hardcoded in `internal/agents/agents.go`. Adding a new harness means adding an entry there.
 
 ## melon.yaml Schema
 

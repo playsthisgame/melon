@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // listReservedRows is the number of terminal rows consumed by chrome outside the
@@ -55,12 +56,9 @@ func (d searchMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, 
 		star = "★ "
 	}
 
-	nameLine := cursor + check + star + r.path
-	if r.pack {
-		nameLine += " [pack]"
-	}
+	author := ""
 	if r.author != "" {
-		nameLine += "  (" + r.author + ")"
+		author = "  (" + r.author + ")"
 	}
 
 	desc := r.description
@@ -69,17 +67,32 @@ func (d searchMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, 
 	}
 	descLine := "           " + desc
 
+	// The [pack] label keeps its own color on every row so packs stand out
+	// from skills; the rest of the line follows the row's state style.
+	nameStyle, descStyle, label := dimItem, dimItem, packLabelDim
 	if d.selected[index] {
-		fmt.Fprintln(w, selectedItem.Render(nameLine))
-		fmt.Fprintln(w, hintStyle.Render(descLine))
+		nameStyle, descStyle, label = selectedItem, hintStyle, packLabel
 	} else if index == m.Index() {
-		fmt.Fprintln(w, normalItem.Render(nameLine))
-		fmt.Fprintln(w, hintStyle.Render(descLine))
-	} else {
-		fmt.Fprintln(w, dimItem.Render(nameLine))
-		fmt.Fprintln(w, dimItem.Render(descLine))
+		nameStyle, descStyle, label = normalItem, hintStyle, packLabel
 	}
+
+	nameLine := nameStyle.Render(cursor + check + star + r.path)
+	if r.pack {
+		nameLine += " " + label.Render("[pack]")
+	}
+	if author != "" {
+		nameLine += nameStyle.Render(author)
+	}
+	fmt.Fprintln(w, nameLine)
+	fmt.Fprintln(w, descStyle.Render(descLine))
 }
+
+var (
+	// packLabel marks packs in search results (magenta, so it differs from the
+	// green selection and cyan title colors used elsewhere).
+	packLabel    = lipgloss.NewStyle().Foreground(lipgloss.Color("5")).Bold(true)
+	packLabelDim = lipgloss.NewStyle().Foreground(lipgloss.Color("5"))
+)
 
 // searchModel is a bubbletea model for the interactive search results list.
 type searchModel struct {

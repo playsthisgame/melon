@@ -12,6 +12,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/playsthisgame/melon/internal/fetcher"
 	gh "github.com/playsthisgame/melon/internal/github"
 	"github.com/playsthisgame/melon/internal/index"
@@ -267,7 +268,7 @@ func TestAdd_PackInstallsMembers(t *testing.T) {
 	cmd, out := newTestCmd()
 	require.NoError(t, runAdd(cmd, []string{springPack + "@^1.0.0"}))
 
-	assert.Contains(t, out.String(), springPack+" is a pack with 3 member(s)")
+	assert.Contains(t, out.String(), springPack+" [pack · 3 skills]")
 	assert.Contains(t, out.String(), "  - "+springBoot+" ^1.0.0")
 	assert.NotContains(t, out.String(), "[Y/n]", "non-TTY must not prompt")
 
@@ -293,7 +294,7 @@ func TestAdd_PackDeclinedLeavesManifest(t *testing.T) {
 	cmd.SetIn(strings.NewReader("n\n"))
 	require.NoError(t, runAdd(cmd, []string{springPack + "@^1.0.0"}))
 
-	assert.Contains(t, out.String(), "Install pack with 3 skill(s)? [Y/n]")
+	assert.Contains(t, out.String(), "Install 1 pack (3 skills)? [Y/n]")
 	after, _ := os.ReadFile(filepath.Join(dir, "melon.yaml"))
 	assert.Equal(t, before, after)
 	assert.Empty(t, w.fetched)
@@ -603,4 +604,178 @@ func TestInfo_PackJSON(t *testing.T) {
 	assert.Equal(t, "pack", parsed.Type)
 	require.Len(t, parsed.Members, 3)
 	assert.Equal(t, infoMember{Name: junitSkill, Constraint: "^1.0.0"}, parsed.Members[0])
+}
+
+// --- search confirmation prompt ---
+
+func stubLatestTag(t *testing.T) {
+	t.Helper()
+	orig := latestTagFn
+	latestTagFn = func(string) (string, string, error) { return "1.0.0", "v1.0.0", nil }
+	t.Cleanup(func() { latestTagFn = orig })
+}
+
+// offerWithPacks runs offerAddMany, answering "n" so nothing is installed.
+func offerWithPacks(t *testing.T, w *packWorld, packs map[string]bool, paths ...string) string {
+	t.Helper()
+	dir := t.TempDir()
+	w.install(t, dir)
+	stubLatestTag(t)
+	writeProject(t, dir, manifest.Manifest{})
+	cmd, out := newTestCmd()
+	cmd.SetIn(strings.NewReader("n\n"))
+	require.NoError(t, offerAddMany(cmd, paths, packs))
+	return out.String()
+}
+
+func TestOfferAddMany_CountsPackSkills(t *testing.T) {
+	out := offerWithPacks(t, springWorld(), map[string]bool{springPack: true}, springPack)
+	assert.Contains(t, out, "  - "+springPack+" [pack · 3 skills]")
+	assert.Contains(t, out, "Install 1 pack (3 skills)? [Y/n]")
+	assert.NotContains(t, out, "1 skill(s)")
+}
+
+func TestOfferAddMany_MixedPacksAndSkillsDedupesSharedMembers(t *testing.T) {
+	packs := map[string]bool{springPack: true, javaPack: true}
+	out := offerWithPacks(t, springWorld(), packs, springPack, javaPack, "github.com/alice/pdf-skill@^1.0.0")
+	assert.Contains(t, out, "  - "+javaPack+" [pack · 1 skill]")
+	// junit is in both packs: 3 + 1 members, 3 distinct.
+	assert.Contains(t, out, "Install 2 packs (3 skills) and 1 skill? [Y/n]")
+	assert.Contains(t, out, "  - github.com/alice/pdf-skill@^1.0.0\n")
+}
+
+func TestOfferAddMany_NestedPackCountsLeafSkills(t *testing.T) {
+	w := springWorld()
+	outer := "github.com/community/packs/outer-pack"
+	w.manifests[outer] = manifest.Manifest{Type: manifest.TypePack, Dependencies: map[string]string{
+		springPack: "^1.0.0", "github.com/x/extra": "^1.0.0"}}
+	out := offerWithPacks(t, w, map[string]bool{outer: true, springPack: true}, outer)
+	assert.Contains(t, out, "Install 1 pack (4 skills)? [Y/n]")
+}
+
+func TestOfferAddMany_UnknownPackContentsStillPrompts(t *testing.T) {
+	dir := t.TempDir()
+	w := springWorld()
+	w.install(t, dir)
+	stubLatestTag(t)
+	fetchManifestFn = func(string, string, string) (manifest.Manifest, error) {
+		return manifest.Manifest{}, fmt.Errorf("network down")
+	}
+	writeProject(t, dir, manifest.Manifest{})
+	cmd, out := newTestCmd()
+	cmd.SetIn(strings.NewReader("n\n"))
+	require.NoError(t, offerAddMany(cmd, []string{springPack}, map[string]bool{springPack: true}))
+	assert.Contains(t, out.String(), "  - "+springPack+" [pack]\n")
+	assert.Contains(t, out.String(), "Install 1 pack? [Y/n]")
+}
+
+func TestSearchRender_PackLabel(t *testing.T) {
+	items := []list.Item{
+		searchResultItem{path: springPack, pack: true},
+		searchResultItem{path: springBoot},
+	}
+	l := list.New(items, searchMultiSelectDelegate{selected: map[int]bool{}}, 80, 10)
+	var buf bytes.Buffer
+	d := searchMultiSelectDelegate{selected: map[int]bool{}}
+	d.Render(&buf, l, 0, items[0])
+	assert.Contains(t, buf.String(), springPack)
+	assert.Contains(t, buf.String(), "[pack]")
+	buf.Reset()
+	d.Render(&buf, l, 1, items[1])
+	assert.NotContains(t, buf.String(), "[pack]")
+}
+
+// --- pack-aware counts elsewhere ---
+
+func TestAdd_NestedPackCountsAllSkills(t *testing.T) {
+	dir := t.TempDir()
+	w := springWorld()
+	outer := "github.com/community/packs/outer-pack"
+	w.manifests[outer] = manifest.Manifest{Type: manifest.TypePack, Dependencies: map[string]string{
+		springPack: "^1.0.0", "github.com/x/extra": "^1.0.0"}}
+	w.pure[outer] = true
+	w.install(t, dir)
+	setAddTTY(t, true)
+	writeProject(t, dir, manifest.Manifest{})
+
+	cmd, out := newTestCmd()
+	cmd.SetIn(strings.NewReader("n\n"))
+	require.NoError(t, runAdd(cmd, []string{outer + "@^1.0.0"}))
+	assert.Contains(t, out.String(), outer+" [pack · 4 skills]")
+	assert.Contains(t, out.String(), "  - "+springPack+" ^1.0.0 [pack · 3 skills]")
+	assert.Contains(t, out.String(), "Install 1 pack (4 skills)? [Y/n]")
+}
+
+func runOfferRemove(t *testing.T, dir string, answer string, names ...string) string {
+	t.Helper()
+	cmd, out := newTestCmd()
+	cmd.SetIn(strings.NewReader(answer))
+	require.NoError(t, offerRemoveMany(cmd, names))
+	return out.String()
+}
+
+func TestOfferRemoveMany_CountsPackSkills(t *testing.T) {
+	dir := t.TempDir()
+	installProject(t, dir, springWorld(), map[string]string{springPack: "^1.0.0", "github.com/alice/pdf-skill": "^1.0.0"})
+
+	out := runOfferRemove(t, dir, "n\n", springPack, "github.com/alice/pdf-skill")
+	assert.Contains(t, out, "  - "+springPack+" [pack · 3 skills]")
+	assert.Contains(t, out, "Remove 1 pack (3 skills) and 1 skill? [y/N]")
+	assert.NotContains(t, out, "skill(s)")
+	assert.Len(t, loadLock(t, dir), 5, "declining must not change anything")
+}
+
+func TestOfferRemoveMany_ReportsKeptSharedMembers(t *testing.T) {
+	dir := t.TempDir()
+	installProject(t, dir, springWorld(), map[string]string{springPack: "^1.0.0", javaPack: "^1.0.0"})
+
+	out := runOfferRemove(t, dir, "n\n", springPack)
+	// junit is still needed by java-testing-pack, so only 2 of the 3 go.
+	assert.Contains(t, out, "(1 skill from these packs stays installed because other dependencies still need them)")
+	assert.Contains(t, out, "Remove 1 pack (2 skills)? [y/N]")
+}
+
+func TestOfferRemoveMany_PrunesPackMembers(t *testing.T) {
+	dir := t.TempDir()
+	installProject(t, dir, springWorld(), map[string]string{springPack: "^1.0.0", javaPack: "^1.0.0"})
+
+	runOfferRemove(t, dir, "y\n", springPack)
+	lock := loadLock(t, dir)
+	assert.NotContains(t, lock, springPack)
+	assert.NotContains(t, lock, springBoot, "pack members must be pruned, not left behind")
+	assert.NotContains(t, lock, springData)
+	assert.Contains(t, lock, junitSkill, "shared member kept")
+	assert.Equal(t, []string{javaPack}, lock[junitSkill].Via)
+	assert.False(t, linkExists(dir, "spring-boot"))
+}
+
+func TestInstalledSummary(t *testing.T) {
+	assert.Equal(t, "3 skills", installedSummary([]lockfile.LockedDep{{Type: "skill"}, {Type: "skill"}, {}}))
+	assert.Equal(t, "1 skill and 1 pack", installedSummary([]lockfile.LockedDep{{Type: "skill"}, {Type: "pack"}}))
+}
+
+func TestUnreachableAfter_LegacyEntriesKept(t *testing.T) {
+	lf := lockfile.LockFile{Dependencies: []lockfile.LockedDep{
+		{Name: "legacy-transitive"}, // pre-provenance entry: parents unknown
+		{Name: "pack", Type: "pack", Direct: true},
+		{Name: "member", Type: "skill", Via: []string{"pack"}},
+	}}
+	got := unreachableAfter(lf, map[string]string{}, map[string]bool{"pack": true})
+	assert.Equal(t, map[string]bool{"pack": true, "member": true}, got)
+}
+
+func TestRemovePicker_LabelsPacks(t *testing.T) {
+	items := []list.Item{removeSkillItem{name: springPack, version: "^1.0.0", pack: true, skills: 3}}
+	l := list.New(items, removeMultiSelectDelegate{selected: map[int]bool{}}, 80, 5)
+	var buf bytes.Buffer
+	removeMultiSelectDelegate{selected: map[int]bool{}}.Render(&buf, l, 0, items[0])
+	assert.Contains(t, buf.String(), springPack+" [pack · 3 skills]  ^1.0.0")
+}
+
+func TestUpdatePicker_LabelsPacks(t *testing.T) {
+	items := []list.Item{updateSkillItem{name: springPack, constraint: "^1.0.0", locked: "1.0.0", pack: true}}
+	l := list.New(items, updateMultiSelectDelegate{selected: map[int]bool{}}, 80, 5)
+	var buf bytes.Buffer
+	updateMultiSelectDelegate{selected: map[int]bool{}}.Render(&buf, l, 0, items[0])
+	assert.Contains(t, buf.String(), springPack+" [pack]  ^1.0.0  (locked: 1.0.0)")
 }

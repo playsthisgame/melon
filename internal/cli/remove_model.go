@@ -13,6 +13,8 @@ import (
 type removeSkillItem struct {
 	name    string
 	version string
+	pack    bool
+	skills  int // for packs: number of skills the pack brings in
 }
 
 func (r removeSkillItem) FilterValue() string { return r.name }
@@ -41,15 +43,19 @@ func (d removeMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, 
 		check = "[✓] "
 	}
 
-	line := cursor + check + r.name + "  " + r.version
-
+	style, label := dimItem, packLabelDim
 	if d.selected[index] {
-		fmt.Fprintln(w, selectedItem.Render(line))
+		style, label = selectedItem, packLabel
 	} else if index == m.Index() {
-		fmt.Fprintln(w, normalItem.Render(line))
-	} else {
-		fmt.Fprintln(w, dimItem.Render(line))
+		style, label = normalItem, packLabel
 	}
+
+	line := style.Render(cursor + check + r.name)
+	if r.pack {
+		line += " " + label.Render(fmt.Sprintf("[pack · %s]", count(r.skills, "skill")))
+	}
+	line += style.Render("  " + r.version)
+	fmt.Fprintln(w, line)
 }
 
 // removeModel is a bubbletea model for the interactive remove skill list.

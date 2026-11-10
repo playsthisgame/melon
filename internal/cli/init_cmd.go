@@ -62,7 +62,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	if flagYes || !isTTY() {
 		name = prompt(cmd, "Project name?", defaultName)
 		description = prompt(cmd, "Short description?", "")
-		agentNames = promptMultiChoice(cmd, "AI tools?", agents.KnownAgents(), []string{})
+		agentNames = promptMultiChoice(cmd, "Harnesses?", agents.KnownAgents(), []string{})
 		vendor = promptVendor(cmd)
 	} else {
 		model := newInitModel(defaultName)

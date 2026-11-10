@@ -237,7 +237,8 @@ func (m initModel) View() string {
 		b.WriteString(hintStyle.Render("enter to confirm") + "\n")
 
 	case stepAgents:
-		b.WriteString(titleStyle.Render("AI tools") + "\n")
+		b.WriteString(titleStyle.Render("Harnesses") + "\n")
+		b.WriteString(hintStyle.Render("The AI coding tools melon should install skills for.") + "\n")
 		b.WriteString(m.agentList.View() + "\n")
 		b.WriteString(hintStyle.Render("↑↓ navigate  space to toggle  enter to confirm") + "\n")
 

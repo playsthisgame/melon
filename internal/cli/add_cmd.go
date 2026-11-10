@@ -135,19 +135,17 @@ func previewGraphAdd(cmd *cobra.Command, m manifest.Manifest, name string, depMa
 		return true, nil
 	}
 
-	packs := make(map[string]bool)
-	for _, d := range resolved {
-		if d.IsPack() {
-			packs[d.Name] = true
-		}
-	}
+	// Count the skills the pack really brings in, including those inside
+	// nested packs, rather than its direct member entries.
+	g := resolvedGraph(resolved)
+	total := len(g.skillsUnder(name))
 	members := sortedKeys(depManifest.Dependencies)
 	out := cmd.OutOrStdout()
-	fmt.Fprintf(out, "%s is a pack with %d member(s):\n", name, len(members))
+	fmt.Fprintf(out, "%s %s\n", name, packTag(total))
 	for _, member := range members {
 		label := ""
-		if packs[member] {
-			label = " (pack)"
+		if g.isPack[member] {
+			label = " " + packTag(len(g.skillsUnder(member)))
 		}
 		fmt.Fprintf(out, "  - %s %s%s\n", member, depManifest.Dependencies[member], label)
 	}
@@ -155,7 +153,7 @@ func previewGraphAdd(cmd *cobra.Command, m manifest.Manifest, name string, depMa
 	if flagAddYes || !addIsTTY() {
 		return true, nil
 	}
-	fmt.Fprintf(out, "Install pack with %d skill(s)? [Y/n]: ", len(members))
+	fmt.Fprintf(out, "Install %s? [Y/n]: ", selectionSummary(1, total, 0))
 	answer := strings.ToLower(strings.TrimSpace(readLine(cmd.InOrStdin())))
 	if answer != "" && answer != "y" && answer != "yes" {
 		fmt.Fprintln(out, "Aborted; melon.yaml unchanged.")

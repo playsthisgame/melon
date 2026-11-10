@@ -158,7 +158,7 @@ func runInstallCore(cmd *cobra.Command, args []string) error {
 		if fetchErr != nil {
 			return fetchErr
 		}
-		fmt.Fprintf(os.Stdout, "✓ %d packages installed\n", len(locked))
+		fmt.Fprintf(os.Stdout, "✓ %s installed\n", installedSummary(locked))
 	} else {
 		locked, err = fetchDeps(resolved, dir, func(i int, name string, e error) {
 			if e == nil {
@@ -388,6 +388,23 @@ func sortedKeys[V any](m map[string]V) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// installedSummary renders "23 skills and 3 packs" (or "3 skills").
+func installedSummary(locked []lockfile.LockedDep) string {
+	var skills, packs int
+	for _, d := range locked {
+		if d.IsPack() {
+			packs++
+		} else {
+			skills++
+		}
+	}
+	s := count(skills, "skill")
+	if packs > 0 {
+		s += " and " + count(packs, "pack")
+	}
+	return s
 }
 
 // lockType normalises a resolved type for the lock file ("skill" when empty).

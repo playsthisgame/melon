@@ -16,6 +16,7 @@ type updateSkillItem struct {
 	name       string
 	constraint string
 	locked     string // currently locked version, or "" if not yet locked
+	pack       bool
 }
 
 func (u updateSkillItem) FilterValue() string { return u.name }
@@ -42,22 +43,26 @@ func (d updateMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, 
 		check = "[✓] "
 	}
 
-	var line string
-	if u.name == updateAllSentinel {
-		line = cursor + check + "Update all"
-	} else if u.locked != "" {
-		line = cursor + check + u.name + "  " + u.constraint + "  (locked: " + u.locked + ")"
-	} else {
-		line = cursor + check + u.name + "  " + u.constraint
+	style, label := dimItem, packLabelDim
+	if d.selected[index] {
+		style, label = selectedItem, packLabel
+	} else if index == m.Index() {
+		style, label = normalItem, packLabel
 	}
 
-	if d.selected[index] {
-		fmt.Fprintln(w, selectedItem.Render(line))
-	} else if index == m.Index() {
-		fmt.Fprintln(w, normalItem.Render(line))
-	} else {
-		fmt.Fprintln(w, dimItem.Render(line))
+	if u.name == updateAllSentinel {
+		fmt.Fprintln(w, style.Render(cursor+check+"Update all"))
+		return
 	}
+	line := style.Render(cursor + check + u.name)
+	if u.pack {
+		line += " " + label.Render("[pack]")
+	}
+	rest := "  " + u.constraint
+	if u.locked != "" {
+		rest += "  (locked: " + u.locked + ")"
+	}
+	fmt.Fprintln(w, line+style.Render(rest))
 }
 
 // updateModel is a bubbletea model for the interactive update skill list.

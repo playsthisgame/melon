@@ -83,7 +83,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		if len(selected) == 0 {
 			return nil // user cancelled or made no selection
 		}
-		return offerAddMany(cmd, selected)
+		return offerAddMany(cmd, selected, packIndex(allEntries))
 	}
 
 	// 4b. Plain-text non-TTY mode.
@@ -197,12 +197,50 @@ func runSearchTUI(items []searchResultItem) ([]string, error) {
 // offerAddMany prints the selected skills, prompts for confirmation, then adds
 // all of them to melon.yaml in one pass before running a single install so that
 // parallel fetching can operate on all new deps at once.
-func offerAddMany(cmd *cobra.Command, paths []string) error {
-	fmt.Fprintf(cmd.OutOrStdout(), "\nSelected skills:\n")
+// packs reports which index names are packs; nested packs are followed through it.
+func offerAddMany(cmd *cobra.Command, paths []string, packs map[string]bool) error {
+	out := cmd.OutOrStdout()
+
+	// For packs, look up how many skills they install so the prompt does not
+	// count a whole pack as one skill.
+	packSkills := make(map[string]int)     // pack path -> skills it installs (-1 if unknown)
+	allPackSkills := make(map[string]bool) // union across selected packs
+	var plain int
 	for _, p := range paths {
-		fmt.Fprintf(cmd.OutOrStdout(), "  - %s\n", p)
+		name, _, _ := strings.Cut(p, "@")
+		if !packs[name] {
+			plain++
+			continue
+		}
+		var skills map[string]bool
+		err := withSpinner(fmt.Sprintf("Reading %s…", name), func() error {
+			var err error
+			skills, err = packSkillSet(name, packs)
+			return err
+		})
+		if err != nil {
+			packSkills[p] = -1
+			continue
+		}
+		packSkills[p] = len(skills)
+		for s := range skills {
+			allPackSkills[s] = true
+		}
 	}
-	fmt.Fprintf(cmd.OutOrStdout(), "Install %d skill(s)? [Y/n]: ", len(paths))
+
+	fmt.Fprintf(out, "\nSelected:\n")
+	for _, p := range paths {
+		n, isPack := packSkills[p]
+		switch {
+		case !isPack:
+			fmt.Fprintf(out, "  - %s\n", p)
+		case n < 0:
+			fmt.Fprintf(out, "  - %s %s\n", p, packLabel.Render("[pack]"))
+		default:
+			fmt.Fprintf(out, "  - %s %s\n", p, packTag(n))
+		}
+	}
+	fmt.Fprintf(out, "Install %s? [Y/n]: ", installSummary(len(packSkills), len(allPackSkills), plain, packSkills))
 
 	reader := bufio.NewReader(cmd.InOrStdin())
 	input, _ := reader.ReadString('\n')
@@ -240,7 +278,7 @@ func offerAddMany(cmd *cobra.Command, paths []string) error {
 			var version string
 			if err := withSpinner(fmt.Sprintf("Resolving %s…", name), func() error {
 				var err error
-				version, _, err = fetcher.LatestTag(repoURL)
+				version, _, err = latestTagFn(repoURL)
 				return err
 			}); err != nil {
 				if !errors.Is(err, fetcher.ErrNoSemverTags) {
@@ -265,4 +303,84 @@ func offerAddMany(cmd *cobra.Command, paths []string) error {
 	}
 
 	return runInstallFn(cmd, nil)
+}
+
+// latestTagFn is overridable in tests.
+var latestTagFn = fetcher.LatestTag
+
+// packIndex returns the set of index entry names that are packs.
+func packIndex(entries []index.Entry) map[string]bool {
+	packs := make(map[string]bool)
+	for _, e := range entries {
+		if e.IsPack() {
+			packs[e.Name] = true
+		}
+	}
+	return packs
+}
+
+// packSkillSet returns the distinct skills a pack installs, following nested
+// packs that appear in packs. Each pack's manifest is read at its latest semver
+// tag (or the default branch when it has none). This is a preview for the
+// confirmation prompt; the install itself does full resolution.
+func packSkillSet(name string, packs map[string]bool) (map[string]bool, error) {
+	skills := make(map[string]bool)
+	visited := make(map[string]bool)
+	var walk func(n string) error
+	walk = func(n string) error {
+		if visited[n] {
+			return nil
+		}
+		visited[n] = true
+		repoURL, subdir := fetcher.ParseDepName(n)
+		ref := "HEAD"
+		if _, tag, err := latestTagFn(repoURL); err == nil {
+			ref = tag
+		}
+		m, err := fetchManifestFn(repoURL, ref, subdir)
+		if err != nil {
+			return err
+		}
+		for dep := range m.Dependencies {
+			if packs[dep] {
+				if err := walk(dep); err != nil {
+					return err
+				}
+			} else {
+				skills[dep] = true
+			}
+		}
+		return nil
+	}
+	return skills, walk(name)
+}
+
+// installSummary renders the confirmation question, e.g.
+// "1 pack (7 skills) and 2 skills". unique is the number of distinct skills
+// across all selected packs; packs whose contents are unknown are left out of
+// the skill count.
+func installSummary(nPacks, unique, plain int, packSkills map[string]int) string {
+	var parts []string
+	if nPacks > 0 {
+		known := true
+		for _, n := range packSkills {
+			if n < 0 {
+				known = false
+			}
+		}
+		p := count(nPacks, "pack")
+		if known {
+			p += " (" + count(unique, "skill") + ")"
+		}
+		parts = append(parts, p)
+	}
+	if plain > 0 {
+		parts = append(parts, count(plain, "skill"))
+	}
+	return strings.Join(parts, " and ")
+}
+
+// count renders "1 skill" / "3 skills" using the shared plural helper.
+func count(n int, word string) string {
+	return fmt.Sprintf("%d %s", n, plural(n, word, word+"s"))
 }
