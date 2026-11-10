@@ -34,6 +34,9 @@ func Load(path string) (Manifest, error) {
 	if err := yaml.Unmarshal(data, &m); err != nil {
 		return Manifest{}, fmt.Errorf("manifest: parse %s: %w", path, err)
 	}
+	if err := m.Validate(); err != nil {
+		return Manifest{}, fmt.Errorf("%s: %w", path, err)
+	}
 	return m, nil
 }
 

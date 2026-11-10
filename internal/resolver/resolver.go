@@ -21,14 +21,26 @@ var ErrConflict = errors.New("resolver: version conflict")
 
 // ResolvedDep is a single dependency with its pinned version.
 type ResolvedDep struct {
-	Name       string // full dep name, e.g. "github.com/anthropics/skills/skills/skill-creator"
-	Version    string // exact pinned semver, e.g. "1.3.1"
-	RepoURL    string // https://github.com/anthropics/skills  (repo root, derived from name)
-	Subdir     string // subdirectory within the repo, e.g. "skills/skill-creator" (empty if repo root)
-	GitTag     string // e.g. "v1.3.1"
-	Entrypoint string // path to SKILL.md relative to subdir root, e.g. "SKILL.md"
-	TreeHash   string // SHA256 of the full directory tree at this tag (sorted file paths)
+	Name       string   // full dep name, e.g. "github.com/anthropics/skills/skills/skill-creator"
+	Version    string   // exact pinned semver, e.g. "1.3.1"
+	RepoURL    string   // https://github.com/anthropics/skills  (repo root, derived from name)
+	Subdir     string   // subdirectory within the repo, e.g. "skills/skill-creator" (empty if repo root)
+	GitTag     string   // e.g. "v1.3.1"
+	Entrypoint string   // path to SKILL.md relative to subdir root, e.g. "SKILL.md"
+	TreeHash   string   // SHA256 of the full directory tree at this tag (sorted file paths)
+	Type       string   // "skill" or "pack", from the dep's own melon.yaml
+	Direct     bool     // true when listed in the root manifest's dependencies
+	Via        []string // sorted names of resolved deps whose manifests declare this dep
 }
+
+// IsPack reports whether the resolved dep is a pack.
+func (d ResolvedDep) IsPack() bool {
+	return d.Type == manifest.TypePack
+}
+
+// RootSource is the constraint source name used for the project's own
+// melon.yaml in conflict errors.
+const RootSource = "melon.yaml"
 
 // Resolve builds a flat, sorted list of all transitive dependencies from m.
 //
@@ -52,6 +64,7 @@ func Resolve(
 		constraint string
 		source     string
 		entrypoint string
+		depType    string
 	}
 
 	type queueItem struct {
@@ -61,6 +74,10 @@ func Resolve(
 	}
 
 	selected := make(map[string]selectedEntry)
+	// parents records every dep that declares a given dep (not only the first).
+	parents := make(map[string]map[string]struct{})
+	// packs records which sources are packs, for conflict error wording.
+	packs := make(map[string]bool)
 
 	// Sort direct deps for a deterministic BFS order.
 	directNames := sortedStringKeys(m.Dependencies)
@@ -69,7 +86,7 @@ func Resolve(
 		queue = append(queue, queueItem{
 			name:       name,
 			constraint: m.Dependencies[name],
-			source:     "root manifest",
+			source:     RootSource,
 		})
 	}
 
@@ -77,13 +94,26 @@ func Resolve(
 		item := queue[0]
 		queue = queue[1:]
 
+		if item.source != RootSource {
+			if parents[item.name] == nil {
+				parents[item.name] = make(map[string]struct{})
+			}
+			parents[item.name][item.source] = struct{}{}
+		}
+
 		if entry, exists := selected[item.name]; exists {
 			// Already have a version selected — check that it satisfies the new constraint.
 			if !semver.IsCompatible(item.constraint, entry.version) {
-				return nil, fmt.Errorf("%w: %s requires %s %q but %s already selected %s %q",
+				err := fmt.Errorf("%w: %s requires %s %q but %s already selected %s %q",
 					ErrConflict,
 					item.source, item.name, item.constraint,
 					entry.source, item.name, entry.constraint)
+				if entry.source == RootSource && packs[item.source] {
+					err = fmt.Errorf("%w\n  pack %s requires %s %q, which your melon.yaml constraint %q does not allow;"+
+						" loosen the constraint in melon.yaml or ask the pack author to widen its range",
+						err, item.source, item.name, item.constraint, entry.constraint)
+				}
+				return nil, err
 			}
 			continue
 		}
@@ -112,6 +142,10 @@ func Resolve(
 			constraint: item.constraint,
 			source:     item.source,
 			entrypoint: entrypoint,
+			depType:    depManifest.EffectiveType(),
+		}
+		if depManifest.IsPack() {
+			packs[item.name] = true
 		}
 
 		// Enqueue transitive deps in sorted order for determinism.
@@ -142,6 +176,9 @@ func Resolve(
 			Subdir:     subdir,
 			GitTag:     entry.gitTag,
 			Entrypoint: entry.entrypoint,
+			Type:       entry.depType,
+			Direct:     isDirect(m, name),
+			Via:        sortedSetKeys(parents[name]),
 		})
 	}
 	return result, nil
@@ -191,6 +228,9 @@ func DefaultFetchManifest(repoURL, gitTag, subdir string) (manifest.Manifest, er
 	if err := yaml.Unmarshal(data, &m); err != nil {
 		return manifest.Manifest{}, fmt.Errorf("resolver: parse %s: %w", rawURL, err)
 	}
+	if err := m.Validate(); err != nil {
+		return manifest.Manifest{}, fmt.Errorf("resolver: %s: %w", rawURL, err)
+	}
 	return m, nil
 }
 
@@ -219,6 +259,24 @@ func splitDepName(name string) (repoURL, subdir string) {
 		subdir = strings.Join(rest, "/")
 	}
 	return repoURL, subdir
+}
+
+func isDirect(m manifest.Manifest, name string) bool {
+	_, ok := m.Dependencies[name]
+	return ok
+}
+
+// sortedSetKeys returns the keys of a set in sorted order, or nil when empty.
+func sortedSetKeys(set map[string]struct{}) []string {
+	if len(set) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(set))
+	for k := range set {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // sortedStringKeys returns the keys of a map[string]string in sorted order.

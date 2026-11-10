@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -11,6 +12,7 @@ import (
 	"github.com/playsthisgame/melon/internal/agents"
 	"github.com/playsthisgame/melon/internal/lockfile"
 	"github.com/playsthisgame/melon/internal/manifest"
+	"github.com/playsthisgame/melon/internal/placer"
 	"github.com/spf13/cobra"
 )
 
@@ -40,13 +42,16 @@ type listJSONOutput struct {
 }
 
 type listInstalledEntry struct {
-	Name       string `json:"name"`
-	Version    string `json:"version"`
-	GitTag     string `json:"git_tag"`
-	RepoURL    string `json:"repo_url"`
-	Subdir     string `json:"subdir"`
-	Entrypoint string `json:"entrypoint"`
-	TreeHash   string `json:"tree_hash"`
+	Name       string   `json:"name"`
+	Version    string   `json:"version"`
+	GitTag     string   `json:"git_tag"`
+	RepoURL    string   `json:"repo_url"`
+	Subdir     string   `json:"subdir"`
+	Entrypoint string   `json:"entrypoint"`
+	TreeHash   string   `json:"tree_hash"`
+	Type       string   `json:"type"`
+	Direct     bool     `json:"direct"`
+	Via        []string `json:"via"`
 }
 
 type listCheckEntry struct {
@@ -79,6 +84,10 @@ func runList(cmd *cobra.Command, args []string) error {
 	} else if flagCheck {
 		targetBases := resolveTargetBases(dir)
 		for _, dep := range deps {
+			if !placer.ShouldPlaceLocked(dep, dir) {
+				fmt.Fprintf(cmd.OutOrStdout(), "  PACK     %-50s  (not placed)\n", dep.Name+"@"+dep.Version)
+				continue
+			}
 			skillName := skillNameFromDep(dep.Name)
 			for _, base := range targetBases {
 				linkPath := filepath.Join(dir, base, skillName)
@@ -92,9 +101,7 @@ func runList(cmd *cobra.Command, args []string) error {
 			}
 		}
 	} else {
-		for _, dep := range deps {
-			fmt.Fprintf(cmd.OutOrStdout(), "  %s  %s\n", dep.Name, dep.Version)
-		}
+		printDepTree(cmd.OutOrStdout(), deps)
 	}
 
 	// --- Pending skills ---
@@ -147,6 +154,9 @@ func runListJSON(cmd *cobra.Command, dir string, deps []lockfile.LockedDep) erro
 			Subdir:     dep.Subdir,
 			Entrypoint: dep.Entrypoint,
 			TreeHash:   dep.TreeHash,
+			Type:       lockType(dep.Type),
+			Direct:     dep.Direct,
+			Via:        append([]string{}, dep.Via...),
 		})
 	}
 
@@ -176,6 +186,9 @@ func runListJSON(cmd *cobra.Command, dir string, deps []lockfile.LockedDep) erro
 	if flagCheck {
 		targetBases := resolveTargetBases(dir)
 		for _, dep := range deps {
+			if !placer.ShouldPlaceLocked(dep, dir) {
+				continue // pure packs are never placed
+			}
 			skillName := skillNameFromDep(dep.Name)
 			for _, base := range targetBases {
 				linkPath := filepath.Join(dir, base, skillName)
@@ -242,4 +255,55 @@ func skillNameFromDep(depName string) string {
 		return depName[idx+1:]
 	}
 	return depName
+}
+
+// printDepTree prints deps one per line. Packs are labeled "(pack)" and their
+// members are indented beneath them (recursively for nested packs). A dep is
+// printed at the top level when it is direct or not reached through any pack,
+// so output is unchanged for projects without packs. deps must be sorted.
+func printDepTree(out io.Writer, deps []lockfile.LockedDep) {
+	isPack := make(map[string]bool)
+	for _, d := range deps {
+		if d.IsPack() {
+			isPack[d.Name] = true
+		}
+	}
+	children := make(map[string][]lockfile.LockedDep)
+	for _, d := range deps {
+		for _, parent := range d.Via {
+			if isPack[parent] {
+				children[parent] = append(children[parent], d)
+			}
+		}
+	}
+
+	var print func(d lockfile.LockedDep, depth int, seen map[string]bool)
+	print = func(d lockfile.LockedDep, depth int, seen map[string]bool) {
+		label := ""
+		if d.IsPack() {
+			label = "  (pack)"
+		}
+		fmt.Fprintf(out, "%s%s  %s%s\n", strings.Repeat("  ", depth+1), d.Name, d.Version, label)
+		if seen[d.Name] {
+			return // guard against cycles
+		}
+		seen[d.Name] = true
+		for _, c := range children[d.Name] {
+			print(c, depth+1, seen)
+		}
+		delete(seen, d.Name)
+	}
+
+	for _, d := range deps {
+		viaPack := false
+		for _, parent := range d.Via {
+			if isPack[parent] {
+				viaPack = true
+				break
+			}
+		}
+		if d.Direct || !viaPack {
+			print(d, 0, map[string]bool{})
+		}
+	}
 }

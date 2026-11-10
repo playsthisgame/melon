@@ -20,6 +20,7 @@ type searchResultItem struct {
 	author      string
 	description string
 	featured    bool
+	pack        bool
 }
 
 func (s searchResultItem) FilterValue() string { return s.path }
@@ -55,6 +56,9 @@ func (d searchMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, 
 	}
 
 	nameLine := cursor + check + star + r.path
+	if r.pack {
+		nameLine += " [pack]"
+	}
 	if r.author != "" {
 		nameLine += "  (" + r.author + ")"
 	}

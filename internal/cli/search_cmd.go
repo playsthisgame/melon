@@ -60,6 +60,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 				author:      e.Author,
 				description: e.Description,
 				featured:    e.Featured,
+				pack:        e.IsPack(),
 			})
 		}
 	}
@@ -91,7 +92,11 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		if r.featured {
 			star = "★ "
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "%s%s\t%s\t%s\n", star, r.path, r.author, r.description)
+		path := r.path
+		if r.pack {
+			path += " [pack]"
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "%s%s\t%s\t%s\n", star, path, r.author, r.description)
 	}
 	return nil
 }

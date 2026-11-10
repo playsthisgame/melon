@@ -36,11 +36,25 @@ func runRemove(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("remove: %w", err)
 	}
 
+	lock, _ := lockfile.Load(filepath.Join(dir, "melon.lock"))
+
 	if _, ok := m.Dependencies[name]; !ok {
+		for _, ld := range lock.Dependencies {
+			if ld.Name == name && len(ld.Via) > 0 {
+				return fmt.Errorf("remove: %q is not in melon.yaml; it is required by %s — remove that instead",
+					name, strings.Join(ld.Via, ", "))
+			}
+		}
 		return fmt.Errorf("remove: %q is not a dependency in melon.yaml", name)
 	}
 
 	delete(m.Dependencies, name)
+
+	// Removing a pack (or anything other deps were installed through) changes
+	// the graph: re-resolve so members nothing else needs are pruned.
+	if hasDependents(lock, name) {
+		return removeViaInstall(cmd, dir, m, manifestPath, lock, name)
+	}
 
 	if err := manifest.Save(m, manifestPath); err != nil {
 		return fmt.Errorf("remove: save melon.yaml: %w", err)
@@ -65,6 +79,50 @@ func runRemove(cmd *cobra.Command, args []string) error {
 	return withSpinner("Updating…", func() error {
 		return removeSingleDep(cmd, dir, m, name)
 	})
+}
+
+// hasDependents reports whether name is a pack in lock or is listed in the via
+// of any other locked dep.
+func hasDependents(lock lockfile.LockFile, name string) bool {
+	for _, ld := range lock.Dependencies {
+		if ld.Name == name && ld.IsPack() {
+			return true
+		}
+		for _, v := range ld.Via {
+			if v == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// removeViaInstall saves the manifest and runs the full install pipeline, which
+// prunes every dep no longer reachable. When vendor is false, the .gitignore
+// entries of all pruned deps are removed too.
+func removeViaInstall(cmd *cobra.Command, dir string, m manifest.Manifest, manifestPath string, oldLock lockfile.LockFile, name string) error {
+	if err := manifest.Save(m, manifestPath); err != nil {
+		return fmt.Errorf("remove: save melon.yaml: %w", err)
+	}
+	fmt.Fprintf(cmd.OutOrStdout(), "Removed %s from melon.yaml\n", name)
+
+	if err := runInstallCore(cmd, nil); err != nil {
+		return err
+	}
+
+	if !m.IsVendored() {
+		newLock, _ := lockfile.Load(filepath.Join(dir, "melon.lock"))
+		var entries []string
+		for _, ld := range lockfile.Diff(oldLock, newLock).Removed {
+			entries = append(entries, gitignoreSymlinkEntries(skillNameFromDep(ld.Name), m)...)
+		}
+		if len(entries) > 0 {
+			if err := gitignore.RemoveEntries(filepath.Join(dir, ".gitignore"), entries); err != nil {
+				return fmt.Errorf("remove: update .gitignore: %w", err)
+			}
+		}
+	}
+	return nil
 }
 
 // removeSingleDep unplaces, de-stores, and removes a single dep from melon.lock

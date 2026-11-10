@@ -183,6 +183,40 @@ tags: []
 > absent, and prints a one-line notice on install. If both keys are present,
 > `harnesses` wins. Melon never rewrites the key for you.
 
+## Skill packs
+
+A **pack** is a curated group of skills that installs with a single `melon add`. For example, a `spring-expert` might bring in every skill you need to build a Spring application. Anyone can publish a pack: it is just a `melon.yaml` with `type: pack` whose `dependencies` are the member skills.
+
+```yaml
+# github.com/playsthisgame/melon-index/packs/spring-expert/melon.yaml (excerpt)
+name: spring-expert
+version: 1.1.0
+description: "Build Spring Boot applications: project setup, idiomatic Spring, JUnit testing, ..."
+type: pack
+entrypoint: SKILL.md
+dependencies:
+  github.com/github/awesome-copilot/skills/java-springboot: "main"
+  github.com/github/awesome-copilot/skills/java-junit: "main"
+  github.com/jeffallan/claude-skills/skills/spring-boot-engineer: "^0.4.20"
+  github.com/jeffallan/claude-skills/skills/java-architect: "^0.4.20"
+```
+
+Official packs live in [playsthisgame/melon-index](https://github.com/playsthisgame/melon-index#packs), and `melon search` labels them `[pack]`.
+
+```sh
+melon add github.com/playsthisgame/melon-index/packs/spring-expert
+```
+
+`melon add` lists the pack's members before installing and asks for confirmation in a terminal (pass `--yes` / `-y` to skip the prompt). Every member is resolved, fetched, locked, and placed like any other skill.
+
+**Pure vs. hybrid packs.** A pack directory that contains only `melon.yaml` is a *pure* pack: its members are placed, the pack itself is not. If the pack directory also contains its entrypoint (`SKILL.md` by default), it is a *hybrid* pack and is placed as a skill too. This is useful for an "expert" skill that knows when to use each member.
+
+**Use ranges, not exact pins.** If your project also depends on a pack member directly, your constraint wins as long as the pack's constraint still allows that version; otherwise install fails with a conflict naming the pack. Exact pins in packs (`"1.4.0"`) make conflicts much more likely, so `melon install` warns about them.
+
+**Removing.** `melon remove <pack>` removes the pack and every member that nothing else requires. Members that are also direct dependencies, or that another pack requires, are kept. You cannot `melon remove` a skill that is only installed through a pack; remove the pack instead.
+
+Packs can depend on other packs. To publish one in an index, add `type: pack` to its index entry so `melon search` labels it `[pack]`.
+
 ## Commands
 
 ### `melon init`
@@ -205,7 +239,7 @@ melon install --frozen    # fail if melon.lock would change (useful in CI)
 melon install --no-place  # fetch and lock only; skip placement into agent dirs
 ```
 
-If a `policy.allowed_sources` block is configured in `melon.yaml`, `melon install` validates all dependencies against the allowlist before fetching anything. Any blocked dependency causes a non-zero exit listing all violations.
+If a `policy.allowed_sources` block is configured in `melon.yaml`, `melon install` validates all dependencies (including pack members and other transitive dependencies) against the allowlist before fetching any skill. Any blocked dependency causes a non-zero exit listing all violations, along with the pack or dependency that pulled each one in.
 
 ### `melon add`
 
@@ -217,7 +251,14 @@ melon add github.com/playsthisgame/melon-index/skills/video-to-gif@^1.0.0   # ex
 melon add github.com/playsthisgame/melon-index/skills/video-to-gif@main     # branch pin
 ```
 
-If a `policy.allowed_sources` block is configured, `melon add` checks the dependency source before writing to `melon.yaml` and exits with an error if the source is not permitted.
+If a `policy.allowed_sources` block is configured, `melon add` checks the dependency source before writing to `melon.yaml` and exits with an error if the source is not permitted. For a [pack](#skill-packs), every member is checked as well.
+
+Adding a [pack](#skill-packs) lists its members and asks for confirmation in a terminal:
+
+```sh
+melon add github.com/playsthisgame/melon-index/packs/spring-expert       # shows members, prompts [Y/n]
+melon add github.com/playsthisgame/melon-index/packs/spring-expert --yes # skip the prompt
+```
 
 ### `melon remove`
 
@@ -226,6 +267,8 @@ Remove a dependency from `melon.yaml`, unlink its agent symlinks, and delete its
 ```sh
 melon remove github.com/playsthisgame/melon-index/skills/video-to-gif
 ```
+
+Removing a [pack](#skill-packs) also removes every member that is no longer required by anything else.
 
 ### `melon update`
 
@@ -293,6 +336,15 @@ Default output:
 
 ```text
   github.com/anthropics/skills/skills/skill-creator  main
+  github.com/playsthisgame/melon-index/skills/video-to-gif   1.2.0
+```
+
+Packs are labeled `(pack)` and their members are indented beneath them:
+
+```text
+  github.com/playsthisgame/melon-index/packs/spring-expert  1.1.0  (pack)
+    github.com/github/awesome-copilot/skills/java-junit  227949a7542a
+    github.com/jeffallan/claude-skills/skills/spring-boot-engineer  0.4.20
   github.com/playsthisgame/melon-index/skills/video-to-gif   1.2.0
 ```
 
@@ -401,7 +453,21 @@ dependencies:
     tree_hash: "sha256:abc123..."
     files:
       - SKILL.md
+    type: skill
+    direct: true
 ```
+
+`type` is `skill` or `pack`. `direct: true` marks dependencies listed in your `melon.yaml`. `via` lists the packs (or other dependencies) that pulled an entry in:
+
+```yaml
+  - name: github.com/jeffallan/claude-skills/skills/spring-boot-engineer
+    # ...
+    type: skill
+    via:
+      - github.com/playsthisgame/melon-index/packs/spring-expert
+```
+
+Lock files written by older melon versions load fine and are rewritten with these fields on the next `melon install`.
 
 Use `--frozen` in CI to ensure the lock file is always up to date:
 
@@ -427,7 +493,9 @@ policy:
 Melon enforces the allowlist on both `melon add` and `melon install`:
 
 - `melon add` checks the source before writing to `melon.yaml` and exits with an error if the dependency is not permitted, so blocked skills never enter the manifest.
-- `melon install` validates every entry in `melon.yaml` against the allowlist before fetching anything. Any violation causes a non-zero exit listing all blocked dependencies.
+- `melon install` validates every entry in `melon.yaml` against the allowlist before resolving, then validates the full resolved graph (pack members and other transitive dependencies) before fetching any skill. Any violation causes a non-zero exit listing all blocked dependencies.
+
+> **Changed in v0.5.0:** earlier versions only checked dependencies listed directly in `melon.yaml`, so transitive dependencies bypassed `allowed_sources`. If an install that used to succeed is now blocked, the error shows which dependency pulled in the blocked source (`via …`). Either add an allowlist pattern for it or drop that dependency.
 
 This means a developer cannot accidentally (or intentionally) add an unapproved skill, and CI will catch any attempts that bypass the local check.
 

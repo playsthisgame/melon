@@ -8,6 +8,7 @@ import (
 	"github.com/playsthisgame/melon/internal/fetcher"
 	gh "github.com/playsthisgame/melon/internal/github"
 	"github.com/playsthisgame/melon/internal/index"
+	"github.com/playsthisgame/melon/internal/manifest"
 	"github.com/spf13/cobra"
 )
 
@@ -35,6 +36,14 @@ type infoJSONOutput struct {
 	LatestVersion string   `json:"latest_version"`
 	Versions      []string `json:"versions"`
 	Branches      []string `json:"branches"`
+	Type          string   `json:"type"`
+	// Members is present only for packs.
+	Members []infoMember `json:"members,omitempty"`
+}
+
+type infoMember struct {
+	Name       string `json:"name"`
+	Constraint string `json:"constraint"`
 }
 
 func runInfo(cmd *cobra.Command, args []string) error {
@@ -92,6 +101,22 @@ func runInfo(cmd *cobra.Command, args []string) error {
 		}
 	}
 
+	// Read the dep's own melon.yaml at the latest tag (or the default branch)
+	// to detect packs. Failure is not fatal: the path is shown as a skill.
+	ref := "HEAD"
+	if hasTags {
+		ref = versions[0]
+	}
+	depType := manifest.TypeSkill
+	var members []infoMember
+	if dm, err := fetchManifestFn("https://github.com/"+owner+"/"+repo, ref, subdir); err == nil && dm.IsPack() {
+		depType = manifest.TypePack
+		members = []infoMember{}
+		for _, name := range sortedKeys(dm.Dependencies) {
+			members = append(members, infoMember{Name: name, Constraint: dm.Dependencies[name]})
+		}
+	}
+
 	if flagInfoJSON {
 		latestVersion := ""
 		if len(versions) > 0 {
@@ -104,6 +129,8 @@ func runInfo(cmd *cobra.Command, args []string) error {
 			LatestVersion: latestVersion,
 			Versions:      versions,
 			Branches:      branches,
+			Type:          depType,
+			Members:       members,
 		}
 		if out.Versions == nil {
 			out.Versions = []string{}
@@ -132,6 +159,9 @@ func runInfo(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(out, "  %-12s %s\n", "Repository", "github.com/"+owner+"/"+repo)
 		fmt.Fprintf(out, "  %-12s %s\n", "Subpath", subdir)
 	}
+	if depType == manifest.TypePack {
+		fmt.Fprintf(out, "  %-12s %s\n", "Type", "pack")
+	}
 	if author != "" {
 		fmt.Fprintf(out, "  %-12s %s\n", "Author", author)
 	}
@@ -146,6 +176,13 @@ func runInfo(cmd *cobra.Command, args []string) error {
 				shown = shown[:8]
 			}
 			fmt.Fprintf(out, "  %-12s %s\n", versionLabel, strings.Join(shown, ", "))
+		}
+	}
+	if depType == manifest.TypePack {
+		fmt.Fprintln(out)
+		fmt.Fprintf(out, "  Members (%d):\n", len(members))
+		for _, mem := range members {
+			fmt.Fprintf(out, "    %s  %s\n", mem.Name, mem.Constraint)
 		}
 	}
 	fmt.Fprintln(out)

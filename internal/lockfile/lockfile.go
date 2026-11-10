@@ -23,6 +23,18 @@ type LockedDep struct {
 	Entrypoint string   `yaml:"entrypoint"`
 	TreeHash   string   `yaml:"tree_hash"`
 	Files      []string `yaml:"files"`
+	// Type is "skill" or "pack". Empty in lock files written before packs
+	// existed; treat empty as "skill".
+	Type string `yaml:"type,omitempty"`
+	// Direct is true when the dep is listed in the project's melon.yaml.
+	Direct bool `yaml:"direct,omitempty"`
+	// Via lists, sorted, the resolved deps whose manifests declare this dep.
+	Via []string `yaml:"via,omitempty"`
+}
+
+// IsPack reports whether the locked dep is a pack.
+func (d LockedDep) IsPack() bool {
+	return d.Type == "pack"
 }
 
 // LockDiff describes what changed between two LockFile snapshots.
@@ -82,4 +94,37 @@ func Diff(old, new LockFile) LockDiff {
 		}
 	}
 	return diff
+}
+
+// ProvenanceChanged reports whether any dep present in both old and new has a
+// different type, direct flag, or via list. Entries in old with an empty Type
+// were written before provenance existed and are treated as matching, so the
+// first --frozen run after upgrading melon does not fail spuriously.
+func ProvenanceChanged(old, new LockFile) bool {
+	oldMap := make(map[string]LockedDep, len(old.Dependencies))
+	for _, d := range old.Dependencies {
+		oldMap[d.Name] = d
+	}
+	for _, n := range new.Dependencies {
+		o, ok := oldMap[n.Name]
+		if !ok || o.Type == "" {
+			continue
+		}
+		if o.Type != n.Type || o.Direct != n.Direct || !equalStrings(o.Via, n.Via) {
+			return true
+		}
+	}
+	return false
+}
+
+func equalStrings(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
