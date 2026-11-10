@@ -105,6 +105,12 @@ skills:
     tags: [java, spring-boot, backend, pack]
     featured: true
 
+  - name: github.com/playsthisgame/melon-index/skills/gh-projects-take-ticket
+    description: "Take the next Ready ticket from a GitHub Projects board, implement it in an isolated worktree, and open a PR"
+    author: playsthisgame
+    tags: [github, github-projects, issues, pull-requests, workflow, agentic]
+    featured: true
+
   - name: github.com/vercel-labs/skills/skills/find-skills
     description: "Discover and install skills from the open agent skills ecosystem"
     author: vercel-labs
