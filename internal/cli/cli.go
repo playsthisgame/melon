@@ -56,9 +56,11 @@ var diffCmd = &cobra.Command{
 var (
 	flagFrozen  bool
 	flagNoPlace bool
+	flagAddYes  bool
 )
 
 func init() {
+	addCmd.Flags().BoolVarP(&flagAddYes, "yes", "y", false, "install packs without the confirmation prompt")
 	installCmd.Flags().BoolVar(&flagFrozen, "frozen", false, "fail if melon.lock would change (useful in CI)")
 	installCmd.Flags().BoolVar(&flagNoPlace, "no-place", false, "fetch and lock only — skip placement into agent directories")
 

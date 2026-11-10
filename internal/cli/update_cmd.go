@@ -94,9 +94,11 @@ func runUpdateInteractive(cmd *cobra.Command) error {
 
 	// Load current locked versions for display in the list.
 	lockedVersions := map[string]string{}
+	lockedPacks := map[string]bool{}
 	if lf, lfErr := lockfile.Load(lockPath); lfErr == nil {
 		for _, dep := range lf.Dependencies {
 			lockedVersions[dep.Name] = dep.Version
+			lockedPacks[dep.Name] = dep.IsPack()
 		}
 	}
 
@@ -111,6 +113,7 @@ func runUpdateInteractive(cmd *cobra.Command) error {
 			name:       name,
 			constraint: constraint,
 			locked:     lockedVersions[name],
+			pack:       lockedPacks[name],
 		})
 		allSemverDeps = append(allSemverDeps, name)
 	}

@@ -70,11 +70,41 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		m.Dependencies = make(map[string]string)
 	}
 
-	if existing, ok := m.Dependencies[name]; ok {
-		fmt.Fprintf(cmd.OutOrStdout(), "warning: updating %s from %s to %s\n", name, existing, constraint)
+	// Resolve the pinned version and read the dep's own manifest before
+	// touching melon.yaml, so we know whether it is a plain skill or a pack.
+	repoURL, subdir := fetcher.ParseDepName(name)
+	version, gitTag, err := resolveVersionFn(repoURL, constraint)
+	if err != nil {
+		return fmt.Errorf("add: resolve %s: %w", name, err)
 	}
+	depManifest, err := fetchManifestFn(repoURL, gitTag, subdir)
+	if err != nil {
+		return fmt.Errorf("add: fetch manifest for %s: %w", name, err)
+	}
+
+	existing, hadExisting := m.Dependencies[name]
 	m.Dependencies[name] = constraint
 
+	// Packs, and skills with their own dependencies, change the shape of the
+	// graph: resolve everything and run the full install pipeline.
+	if depManifest.IsPack() || len(depManifest.Dependencies) > 0 {
+		proceed, err := previewGraphAdd(cmd, m, name, depManifest)
+		if err != nil || !proceed {
+			return err
+		}
+		if hadExisting {
+			fmt.Fprintf(cmd.OutOrStdout(), "warning: updating %s from %s to %s\n", name, existing, constraint)
+		}
+		if err := manifest.Save(m, manifestPath); err != nil {
+			return fmt.Errorf("add: save melon.yaml: %w", err)
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "Added %s %s to melon.yaml\n", name, constraint)
+		return runInstallCore(cmd, nil)
+	}
+
+	if hadExisting {
+		fmt.Fprintf(cmd.OutOrStdout(), "warning: updating %s from %s to %s\n", name, existing, constraint)
+	}
 	if err := manifest.Save(m, manifestPath); err != nil {
 		return fmt.Errorf("add: save melon.yaml: %w", err)
 	}
@@ -82,25 +112,64 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	fmt.Fprintf(cmd.OutOrStdout(), "Added %s %s to melon.yaml\n", name, constraint)
 
 	// Install only the new dep — existing deps are already fetched, locked, and placed.
-	return installSingleDep(cmd, dir, m, name, constraint)
+	return installSingleDep(cmd, dir, m, name, version, gitTag, depManifest)
 }
 
-// installSingleDep resolves, fetches, locks, and places a single dependency
-// without touching any other already-installed deps.
-func installSingleDep(cmd *cobra.Command, dir string, m manifest.Manifest, name, constraint string) error {
+// previewGraphAdd resolves m (which already contains the new dep, in memory
+// only), enforces allowed_sources on the full graph, and — for packs — shows
+// the member list and asks for confirmation in a TTY. It returns false with a
+// nil error when the user declines. melon.yaml is never written here.
+func previewGraphAdd(cmd *cobra.Command, m manifest.Manifest, name string, depManifest manifest.Manifest) (bool, error) {
+	var resolved []resolver.ResolvedDep
+	if err := withSpinner(fmt.Sprintf("Resolving dependencies of %s…", name), func() error {
+		var err error
+		resolved, err = resolver.Resolve(m, resolveVersionFn, fetchManifestFn)
+		return err
+	}); err != nil {
+		return false, fmt.Errorf("add: %w", err)
+	}
+	if err := checkResolvedPolicy(m, resolved); err != nil {
+		return false, fmt.Errorf("add: %w", err)
+	}
+	if !depManifest.IsPack() {
+		return true, nil
+	}
+
+	// Count the skills the pack really brings in, including those inside
+	// nested packs, rather than its direct member entries.
+	g := resolvedGraph(resolved)
+	total := len(g.skillsUnder(name))
+	members := sortedKeys(depManifest.Dependencies)
+	out := cmd.OutOrStdout()
+	fmt.Fprintf(out, "%s %s\n", name, packTag(total))
+	for _, member := range members {
+		label := ""
+		if g.isPack[member] {
+			label = " " + packTag(len(g.skillsUnder(member)))
+		}
+		fmt.Fprintf(out, "  - %s %s%s\n", member, depManifest.Dependencies[member], label)
+	}
+
+	if flagAddYes || !addIsTTY() {
+		return true, nil
+	}
+	fmt.Fprintf(out, "Install %s? [Y/n]: ", selectionSummary(1, total, 0))
+	answer := strings.ToLower(strings.TrimSpace(readLine(cmd.InOrStdin())))
+	if answer != "" && answer != "y" && answer != "yes" {
+		fmt.Fprintln(out, "Aborted; melon.yaml unchanged.")
+		return false, nil
+	}
+	return true, nil
+}
+
+// addIsTTY is overridable in tests to exercise the confirmation prompt.
+var addIsTTY = isTTY
+
+// installSingleDep fetches, locks, and places a single, already-resolved
+// dependency without touching any other already-installed deps.
+func installSingleDep(cmd *cobra.Command, dir string, m manifest.Manifest, name, version, gitTag string, depManifest manifest.Manifest) error {
 	repoURL, subdir := fetcher.ParseDepName(name)
 
-	// Resolve the pinned version for this constraint.
-	version, gitTag, err := resolveVersionFn(repoURL, constraint)
-	if err != nil {
-		return fmt.Errorf("add: resolve %s: %w", name, err)
-	}
-
-	// Fetch the dep's own manifest to get its declared entrypoint.
-	depManifest, err := fetchManifestFn(repoURL, gitTag, subdir)
-	if err != nil {
-		return fmt.Errorf("add: fetch manifest for %s: %w", name, err)
-	}
 	entrypoint := "SKILL.md"
 	if depManifest.Entrypoint != "" {
 		entrypoint = depManifest.Entrypoint
@@ -140,6 +209,8 @@ func installSingleDep(cmd *cobra.Command, dir string, m manifest.Manifest, name,
 		Entrypoint: dep.Entrypoint,
 		TreeHash:   result.TreeHash,
 		Files:      result.Files,
+		Type:       depManifest.EffectiveType(),
+		Direct:     true,
 	}
 
 	var oldVersion string
@@ -147,6 +218,8 @@ func installSingleDep(cmd *cobra.Command, dir string, m manifest.Manifest, name,
 	for i, ld := range lf.Dependencies {
 		if ld.Name == name {
 			oldVersion = ld.Version
+			// Keep pack provenance if this skill was already installed via a pack.
+			newEntry.Via = ld.Via
 			lf.Dependencies[i] = newEntry
 			upserted = true
 			break

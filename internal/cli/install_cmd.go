@@ -2,8 +2,11 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -115,10 +118,19 @@ func runInstallCore(cmd *cobra.Command, args []string) error {
 
 	// Resolve the full transitive dependency graph.
 	fmt.Fprintln(cmd.OutOrStdout(), "Resolving dependencies...")
-	resolved, err := resolver.Resolve(m, resolveVersionFn, fetchManifestFn)
+	packManifests := make(map[string]manifest.Manifest)
+	resolved, err := resolver.Resolve(m, resolveVersionFn, recordPackManifests(fetchManifestFn, packManifests))
 	if err != nil {
 		return fmt.Errorf("install: %w", err)
 	}
+
+	// Enforce allowed_sources on the whole graph (pack members included)
+	// before any skill content is fetched.
+	if err := checkResolvedPolicy(m, resolved); err != nil {
+		return fmt.Errorf("install: %w", err)
+	}
+
+	warnExactPackPins(cmd.OutOrStdout(), packManifests)
 
 	// Fetch each resolved dep into the store.
 	var locked []lockfile.LockedDep
@@ -146,7 +158,7 @@ func runInstallCore(cmd *cobra.Command, args []string) error {
 		if fetchErr != nil {
 			return fetchErr
 		}
-		fmt.Fprintf(os.Stdout, "✓ %d packages installed\n", len(locked))
+		fmt.Fprintf(os.Stdout, "✓ %s installed\n", installedSummary(locked))
 	} else {
 		locked, err = fetchDeps(resolved, dir, func(i int, name string, e error) {
 			if e == nil {
@@ -169,6 +181,9 @@ func runInstallCore(cmd *cobra.Command, args []string) error {
 		if len(diff.Added)+len(diff.Removed)+len(diff.Updated) > 0 {
 			printLockDiff(cmd, diff)
 			return fmt.Errorf("install --frozen: melon.lock is out of date")
+		}
+		if lockfile.ProvenanceChanged(oldLock, newLock) {
+			return fmt.Errorf("install --frozen: melon.lock is out of date (dependency provenance changed)")
 		}
 		fmt.Fprintln(cmd.OutOrStdout(), "Lock file is up to date.")
 		return nil
@@ -265,6 +280,9 @@ func gitignoreSymlinkEntries(skillName string, m manifest.Manifest) []string {
 func managedGitignoreEntries(resolved []resolver.ResolvedDep, m manifest.Manifest, projectDir string) []string {
 	entries := []string{store.StoreDir + "/"}
 	for _, dep := range resolved {
+		if !placer.ShouldPlace(dep, projectDir) {
+			continue // pure packs have no symlink to ignore
+		}
 		skillName := dep.Name
 		if idx := strings.LastIndex(dep.Name, "/"); idx >= 0 {
 			skillName = dep.Name[idx+1:]
@@ -281,6 +299,9 @@ func fetchDeps(resolved []resolver.ResolvedDep, dir string, onFetch func(i int, 
 	locked := make([]lockfile.LockedDep, len(resolved))
 	errs := make([]error, len(resolved))
 	var wg sync.WaitGroup
+	// onFetch writes progress output; serialize it so parallel fetches never
+	// write to the same writer concurrently.
+	var onFetchMu sync.Mutex
 
 	for i, dep := range resolved {
 		wg.Add(1)
@@ -291,7 +312,9 @@ func fetchDeps(resolved []resolver.ResolvedDep, dir string, onFetch func(i int, 
 
 			installDir := store.InstalledPath(dir, dep)
 			result, err := fetchFn(dep, installDir)
+			onFetchMu.Lock()
 			onFetch(i, fmt.Sprintf("%s@%s", dep.Name, dep.Version), err)
+			onFetchMu.Unlock()
 			if err != nil {
 				errs[i] = fmt.Errorf("install: fetch %s: %w", dep.Name, err)
 				return
@@ -305,6 +328,9 @@ func fetchDeps(resolved []resolver.ResolvedDep, dir string, onFetch func(i int, 
 				Entrypoint: dep.Entrypoint,
 				TreeHash:   result.TreeHash,
 				Files:      result.Files,
+				Type:       lockType(dep.Type),
+				Direct:     dep.Direct,
+				Via:        dep.Via,
 			}
 		}(i, dep)
 	}
@@ -317,6 +343,76 @@ func fetchDeps(resolved []resolver.ResolvedDep, dir string, onFetch func(i int, 
 		}
 	}
 	return locked, nil
+}
+
+// recordPackManifests wraps a manifest fetcher so every pack manifest seen
+// during resolution is stored in into, keyed by dep name.
+func recordPackManifests(
+	fetch func(repoURL, gitTag, subdir string) (manifest.Manifest, error),
+	into map[string]manifest.Manifest,
+) func(repoURL, gitTag, subdir string) (manifest.Manifest, error) {
+	return func(repoURL, gitTag, subdir string) (manifest.Manifest, error) {
+		mm, err := fetch(repoURL, gitTag, subdir)
+		if err == nil && mm.IsPack() {
+			name := strings.TrimPrefix(repoURL, "https://")
+			if subdir != "" {
+				name += "/" + subdir
+			}
+			into[name] = mm
+		}
+		return mm, err
+	}
+}
+
+var exactVersionRe = regexp.MustCompile(`^[=v]?\d+\.\d+\.\d+(?:[-+].*)?$`)
+
+// warnExactPackPins prints a warning for each pack member pinned to an exact
+// version. Exact pins in packs conflict with any other constraint on the same
+// skill, so pack authors should use ranges.
+func warnExactPackPins(out io.Writer, packs map[string]manifest.Manifest) {
+	for _, pack := range sortedKeys(packs) {
+		deps := packs[pack].Dependencies
+		for _, member := range sortedKeys(deps) {
+			if exactVersionRe.MatchString(deps[member]) {
+				fmt.Fprintf(out, "warning: pack %s pins %s to exact version %s; packs should use a range like ^%s\n",
+					pack, member, deps[member], strings.TrimLeft(deps[member], "=v"))
+			}
+		}
+	}
+}
+
+func sortedKeys[V any](m map[string]V) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// installedSummary renders "23 skills and 3 packs" (or "3 skills").
+func installedSummary(locked []lockfile.LockedDep) string {
+	var skills, packs int
+	for _, d := range locked {
+		if d.IsPack() {
+			packs++
+		} else {
+			skills++
+		}
+	}
+	s := count(skills, "skill")
+	if packs > 0 {
+		s += " and " + count(packs, "pack")
+	}
+	return s
+}
+
+// lockType normalises a resolved type for the lock file ("skill" when empty).
+func lockType(t string) string {
+	if t == "" {
+		return manifest.TypeSkill
+	}
+	return t
 }
 
 func printLockDiff(cmd *cobra.Command, d lockfile.LockDiff) {

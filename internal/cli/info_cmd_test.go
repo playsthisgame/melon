@@ -106,8 +106,14 @@ func newInfoJSONCmd(t *testing.T) (cmd *cobra.Command, outBuf, errBuf *bytes.Buf
 //   - GET /repos/<owner>/<repo>  → {"description": repoAbout}
 //   - GET /repos/<owner>/<repo>/tags  → [{"name":"v1.0.0"},{"name":"v0.9.0"}] or []
 //   - GET /repos/<owner>/<repo>/branches  → [{"name":"main"}] (used when noTags)
+//
+// It also stubs fetchManifestFn (no melon.yaml) so info tests never reach
+// raw.githubusercontent.com; tests that need a manifest override it afterwards.
 func fakeGitHubAndIndexServer(t *testing.T, indexYAML, owner, repo, repoAbout string, noTags bool) *httptest.Server {
 	t.Helper()
+	origFetchManifest := fetchManifestFn
+	fetchManifestFn = func(string, string, string) (manifest.Manifest, error) { return manifest.Manifest{}, nil }
+	t.Cleanup(func() { fetchManifestFn = origFetchManifest })
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.URL.Path == "/index.yaml":
@@ -173,6 +179,9 @@ func TestInfo_JSON_InIndexSkill(t *testing.T) {
 	assert.Equal(t, "v1.0.0", out.LatestVersion)
 	assert.Equal(t, []string{"v1.0.0", "v0.9.0"}, out.Versions)
 	assert.Empty(t, out.Branches)
+	assert.Equal(t, "skill", out.Type)
+	assert.Nil(t, out.Members)
+	assert.NotContains(t, outBuf.String(), `"members"`)
 }
 
 func TestInfo_JSON_NotInIndexSkill(t *testing.T) {

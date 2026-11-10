@@ -16,6 +16,30 @@ import (
 	"github.com/playsthisgame/melon/internal/store"
 )
 
+// ShouldPlace reports whether dep gets a symlink in harness directories.
+// Skills always do. A pack does only when its cached directory contains its
+// entrypoint file (a hybrid pack); a pure pack, which only lists members, does
+// not. Place, Unplace, gitignore management and list --check all use this so
+// they agree on which deps have symlinks.
+func ShouldPlace(dep resolver.ResolvedDep, projectDir string) bool {
+	if !dep.IsPack() {
+		return true
+	}
+	entrypoint := dep.Entrypoint
+	if entrypoint == "" {
+		entrypoint = "SKILL.md"
+	}
+	_, err := os.Stat(filepath.Join(store.InstalledPath(projectDir, dep), entrypoint))
+	return err == nil
+}
+
+// ShouldPlaceLocked is ShouldPlace for a lock file entry.
+func ShouldPlaceLocked(dep lockfile.LockedDep, projectDir string) bool {
+	return ShouldPlace(resolver.ResolvedDep{
+		Name: dep.Name, Version: dep.Version, Entrypoint: dep.Entrypoint, Type: dep.Type,
+	}, projectDir)
+}
+
 // Unplace removes the agent directory symlink for each dep in every agent
 // directory derived from m.HarnessList() (or m.Outputs if declared). Missing
 // symlinks are silently ignored. Returns the first error encountered.
@@ -38,6 +62,15 @@ func Unplace(deps []lockfile.LockedDep, m manifest.Manifest, projectDir string, 
 		skillName := dep.Name
 		if idx := strings.LastIndex(dep.Name, "/"); idx >= 0 {
 			skillName = dep.Name[idx+1:]
+		}
+
+		if !ShouldPlaceLocked(dep, projectDir) {
+			// Pure pack: nothing was linked. Quietly clear any stale link left
+			// by an older version that was a hybrid pack.
+			for _, base := range targetBases {
+				removeIfSymlink(filepath.Join(projectDir, base, skillName))
+			}
+			continue
 		}
 
 		for _, base := range targetBases {
@@ -85,6 +118,15 @@ func Place(deps []resolver.ResolvedDep, m manifest.Manifest, projectDir string, 
 			skillName = dep.Name[idx+1:]
 		}
 
+		if !ShouldPlace(dep, projectDir) {
+			// Pure pack: its members are placed, the pack itself is not. Clear a
+			// stale link in case a previous version was a hybrid pack.
+			for _, base := range targetBases {
+				removeIfSymlink(filepath.Join(projectDir, base, skillName))
+			}
+			continue
+		}
+
 		cacheDir := store.InstalledPath(projectDir, dep)
 
 		for _, base := range targetBases {
@@ -116,4 +158,12 @@ func Place(deps []resolver.ResolvedDep, m manifest.Manifest, projectDir string, 
 		}
 	}
 	return nil
+}
+
+// removeIfSymlink deletes path only when it is a symlink, leaving real files
+// and directories a user may have created untouched.
+func removeIfSymlink(path string) {
+	if fi, err := os.Lstat(path); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		_ = os.Remove(path)
+	}
 }

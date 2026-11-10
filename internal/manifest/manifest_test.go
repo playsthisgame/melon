@@ -300,3 +300,55 @@ func TestHarnesses_RoundTrip(t *testing.T) {
 	assert.Equal(t, []string{"claude-code", "codex"}, got.HarnessList())
 	assert.False(t, got.UsesLegacyToolCompat())
 }
+
+func writeManifest(t *testing.T, body string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "melon.yaml")
+	require.NoError(t, os.WriteFile(path, []byte(body), 0644))
+	return path
+}
+
+func TestLoad_TypeDefaultsToSkill(t *testing.T) {
+	m, err := manifest.Load(writeManifest(t, "name: s\nversion: 1.0.0\n"))
+	require.NoError(t, err)
+	assert.False(t, m.IsPack())
+	assert.Equal(t, manifest.TypeSkill, m.EffectiveType())
+}
+
+func TestLoad_PackTypeAccepted(t *testing.T) {
+	m, err := manifest.Load(writeManifest(t,
+		"name: spring-expert-pack\nversion: 1.0.0\ntype: pack\ndependencies:\n  github.com/acme/skills/spring-boot: ^1.0.0\n"))
+	require.NoError(t, err)
+	assert.True(t, m.IsPack())
+	assert.Equal(t, manifest.TypePack, m.EffectiveType())
+	assert.Len(t, m.Dependencies, 1)
+}
+
+func TestLoad_UnknownTypeRejected(t *testing.T) {
+	_, err := manifest.Load(writeManifest(t, "name: s\nversion: 1.0.0\ntype: bundle\n"))
+	require.Error(t, err)
+	assert.ErrorIs(t, err, manifest.ErrInvalidType)
+	assert.Contains(t, err.Error(), "bundle")
+	assert.Contains(t, err.Error(), "skill")
+	assert.Contains(t, err.Error(), "pack")
+}
+
+func TestRoundTrip_PackType(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "melon.yaml")
+	in := manifest.Manifest{Name: "p", Version: "1.0.0", Type: manifest.TypePack,
+		Dependencies: map[string]string{"github.com/a/b": "^1.0.0"}}
+	require.NoError(t, manifest.Save(in, path))
+	out, err := manifest.Load(path)
+	require.NoError(t, err)
+	assert.Equal(t, in.Type, out.Type)
+	assert.Equal(t, in.Dependencies, out.Dependencies)
+}
+
+func TestLoad_LegacyTypeAcceptedAsSkill(t *testing.T) {
+	for _, ty := range []string{"agent", "workflow", "persona", "memory"} {
+		m, err := manifest.Load(writeManifest(t, "name: s\nversion: 1.0.0\ntype: "+ty+"\n"))
+		require.NoError(t, err, ty)
+		assert.False(t, m.IsPack(), ty)
+		assert.Equal(t, manifest.TypeSkill, m.EffectiveType(), ty)
+	}
+}

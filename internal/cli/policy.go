@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/playsthisgame/melon/internal/manifest"
+	"github.com/playsthisgame/melon/internal/resolver"
 )
 
 // matchesAllowedSources reports whether depPath satisfies at least one glob
@@ -45,6 +46,32 @@ func checkSourcePolicy(m manifest.Manifest, depPaths []string) error {
 		if !matchesAllowedSources(dep, m.Policy.AllowedSources) {
 			blocked = append(blocked, dep)
 		}
+	}
+	if len(blocked) == 0 {
+		return nil
+	}
+	return fmt.Errorf("source policy violation: the following dependencies are not permitted by allowed_sources %v:\n%s",
+		m.Policy.AllowedSources, "  - "+strings.Join(blocked, "\n  - "))
+}
+
+// checkResolvedPolicy validates every dep in the resolved graph — including
+// pack members and other transitive deps — against allowed_sources. Blocked
+// transitive deps are reported with the deps that pulled them in, so users can
+// see which pack is responsible.
+func checkResolvedPolicy(m manifest.Manifest, resolved []resolver.ResolvedDep) error {
+	if m.Policy == nil || len(m.Policy.AllowedSources) == 0 {
+		return nil
+	}
+	var blocked []string
+	for _, dep := range resolved {
+		if matchesAllowedSources(dep.Name, m.Policy.AllowedSources) {
+			continue
+		}
+		line := dep.Name
+		if len(dep.Via) > 0 {
+			line += " (via " + strings.Join(dep.Via, ", ") + ")"
+		}
+		blocked = append(blocked, line)
 	}
 	if len(blocked) == 0 {
 		return nil

@@ -18,6 +18,14 @@ type Entry struct {
 	Author      string   `yaml:"author"`
 	Tags        []string `yaml:"tags"`
 	Featured    bool     `yaml:"featured"`
+	// Type is "skill" (default) or "pack". Unknown values are treated as
+	// "skill"; use IsPack rather than reading the field directly.
+	Type string `yaml:"type,omitempty"`
+}
+
+// IsPack reports whether the entry is a pack (a curated group of skills).
+func (e Entry) IsPack() bool {
+	return strings.EqualFold(e.Type, "pack")
 }
 
 type indexFile struct {

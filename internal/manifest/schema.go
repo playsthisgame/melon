@@ -1,5 +1,10 @@
 package manifest
 
+import (
+	"errors"
+	"fmt"
+)
+
 // PolicyConfig holds optional source restriction policy for a project.
 type PolicyConfig struct {
 	// AllowedSources is a list of glob patterns. Only dependency paths matching
@@ -19,9 +24,13 @@ type IndexConfig struct {
 
 // Manifest is the parsed representation of a project's melon.yaml.
 type Manifest struct {
-	Name         string            `yaml:"name"`
-	Version      string            `yaml:"version"`
-	Description  string            `yaml:"description,omitempty"`
+	Name        string `yaml:"name"`
+	Version     string `yaml:"version"`
+	Description string `yaml:"description,omitempty"`
+	// Type is "skill" (default when empty) or "pack". A pack is a curated group
+	// of skills whose members are its dependencies. Use IsPack rather than
+	// comparing this field directly.
+	Type         string            `yaml:"type,omitempty"`
 	Entrypoint   string            `yaml:"entrypoint"`
 	Dependencies map[string]string `yaml:"dependencies,omitempty"`
 	// Outputs maps target filenames to glob patterns of dep names to include.
@@ -45,6 +54,47 @@ type Manifest struct {
 	Index *IndexConfig `yaml:"index,omitempty"`
 	// Policy configures source restrictions. When absent, all sources are permitted.
 	Policy *PolicyConfig `yaml:"policy,omitempty"`
+}
+
+// Manifest types.
+const (
+	TypeSkill = "skill"
+	TypePack  = "pack"
+)
+
+// ErrInvalidType is returned when a manifest's type field is not a known value.
+var ErrInvalidType = errors.New("manifest: invalid type")
+
+// legacyTypes are values from the pre-v0.5 schema (skill | agent | workflow |
+// persona | memory). Published manifests may still carry them, so they are
+// accepted and treated as skills.
+var legacyTypes = map[string]bool{"agent": true, "workflow": true, "persona": true, "memory": true}
+
+// IsPack reports whether the manifest declares type: pack.
+func (m Manifest) IsPack() bool {
+	return m.Type == TypePack
+}
+
+// EffectiveType returns "pack" for packs and "skill" otherwise (including an
+// empty type and legacy values such as "agent").
+func (m Manifest) EffectiveType() string {
+	if m.IsPack() {
+		return TypePack
+	}
+	return TypeSkill
+}
+
+// Validate checks fields that have a fixed set of allowed values.
+func (m Manifest) Validate() error {
+	switch m.Type {
+	case "", TypeSkill, TypePack:
+		return nil
+	default:
+		if legacyTypes[m.Type] {
+			return nil
+		}
+		return fmt.Errorf("%w %q: must be one of %q, %q", ErrInvalidType, m.Type, TypeSkill, TypePack)
+	}
 }
 
 // IsVendored reports whether the manifest is in vendor mode.

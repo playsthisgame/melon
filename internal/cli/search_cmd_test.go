@@ -20,7 +20,7 @@ func runOfferAddMany(t *testing.T, paths []string, input string) (string, error)
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetIn(strings.NewReader(input))
-	err := offerAddMany(cmd, paths)
+	err := offerAddMany(cmd, paths, nil)
 	return out.String(), err
 }
 
