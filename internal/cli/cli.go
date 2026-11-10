@@ -10,6 +10,7 @@ import (
 var (
 	flagDir     string
 	flagVerbose bool
+	flagGlobal  bool
 )
 
 var installCmd = &cobra.Command{
@@ -77,6 +78,7 @@ func Run(name, version string) {
 	}
 	rootCmd.PersistentFlags().StringVar(&flagDir, "dir", "", "project root directory (default: current working directory)")
 	rootCmd.PersistentFlags().BoolVar(&flagVerbose, "verbose", false, "enable verbose output")
+	rootCmd.PersistentFlags().BoolVarP(&flagGlobal, "global", "g", false, "use the global install (~/.config/melon/) instead of the current project")
 
 	rootCmd.AddCommand(initCmd, installCmd, addCmd, removeCmd, updateCmd, outdatedCmd, diffCmd, listCmd, searchCmd, infoCmd, cleanCmd)
 

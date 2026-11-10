@@ -121,7 +121,7 @@ func runDiff(cmd *cobra.Command, args []string) error {
 
 	// Materialize both trees in the .melon/ cache. fetchFn is idempotent — the
 	// locked version is usually already present and skipped.
-	if err := os.MkdirAll(filepath.Join(dir, store.StoreDir), 0755); err != nil {
+	if err := os.MkdirAll(store.Dir(dir), 0755); err != nil {
 		return fmt.Errorf("diff: create store: %w", err)
 	}
 	fromDir := store.InstalledPath(dir, fromDep)

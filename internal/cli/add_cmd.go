@@ -185,7 +185,7 @@ func installSingleDep(cmd *cobra.Command, dir string, m manifest.Manifest, name,
 	}
 
 	// Fetch into the store (idempotent — skips if tree hash matches).
-	if err := os.MkdirAll(filepath.Join(dir, store.StoreDir), 0755); err != nil {
+	if err := os.MkdirAll(store.Dir(dir), 0755); err != nil {
 		return fmt.Errorf("add: create store: %w", err)
 	}
 	installDir := store.InstalledPath(dir, dep)
@@ -247,7 +247,7 @@ func installSingleDep(cmd *cobra.Command, dir string, m manifest.Manifest, name,
 	}
 
 	// Sync .gitignore when vendor: false.
-	if !m.IsVendored() {
+	if managesGitignore(m, dir) {
 		gitignorePath := filepath.Join(dir, ".gitignore")
 		entries := managedGitignoreEntries([]resolver.ResolvedDep{dep}, m, dir)
 		if _, err := gitignore.EnsureEntries(gitignorePath, entries); err != nil {

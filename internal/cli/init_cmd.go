@@ -11,6 +11,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/playsthisgame/melon/internal/agents"
 	"github.com/playsthisgame/melon/internal/manifest"
+	"github.com/playsthisgame/melon/internal/scope"
+	"github.com/playsthisgame/melon/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -31,13 +33,16 @@ func init() {
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
-	dir, err := resolveProjectDir()
+	dir, err := resolveRootDir()
 	if err != nil {
 		return err
 	}
+	if flagGlobal {
+		return runInitGlobal(cmd, dir)
+	}
 
 	manifestPath := manifest.FindPath(dir)
-	mlnDir := filepath.Join(dir, ".melon")
+	mlnDir := store.Dir(dir)
 
 	// Overwrite protection.
 	if _, err := os.Stat(manifestPath); err == nil {
@@ -97,12 +102,39 @@ func runInit(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// resolveProjectDir returns --dir if set, otherwise the current working directory.
+// resolveProjectDir returns the directory holding melon.yaml and melon.lock:
+// the global root (~/.config/melon/) with --global, else --dir if set, else the
+// current working directory. With --global the global manifest must exist.
 func resolveProjectDir() (string, error) {
+	dir, err := resolveRootDir()
+	if err != nil || !flagGlobal {
+		return dir, err
+	}
+	if _, err := os.Stat(manifest.FindPath(dir)); err != nil {
+		return "", fmt.Errorf("no global melon.yaml at %s: run `melon init --global` first", scope.Tilde(manifest.FindPath(dir)))
+	}
+	return dir, nil
+}
+
+// resolveRootDir is resolveProjectDir without the global manifest check, for
+// melon init.
+func resolveRootDir() (string, error) {
+	if flagGlobal {
+		if flagDir != "" {
+			return "", fmt.Errorf("--global and --dir cannot be used together")
+		}
+		return scope.GlobalRoot()
+	}
 	if flagDir != "" {
 		return filepath.Abs(flagDir)
 	}
 	return os.Getwd()
+}
+
+// managesGitignore reports whether melon keeps .gitignore in sync for the
+// manifest m loaded from dir. Global installs have no repository, so never.
+func managesGitignore(m manifest.Manifest, dir string) bool {
+	return !m.IsVendored() && !scope.IsGlobal(dir)
 }
 
 // prompt prints a question and reads a line from stdin.

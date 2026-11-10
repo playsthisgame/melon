@@ -9,10 +9,10 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/playsthisgame/melon/internal/agents"
 	"github.com/playsthisgame/melon/internal/lockfile"
 	"github.com/playsthisgame/melon/internal/manifest"
 	"github.com/playsthisgame/melon/internal/placer"
+	"github.com/playsthisgame/melon/internal/scope"
 	"github.com/spf13/cobra"
 )
 
@@ -57,7 +57,7 @@ type listInstalledEntry struct {
 type listCheckEntry struct {
 	Name   string `json:"name"`
 	Path   string `json:"path"`
-	Status string `json:"status"` // "ok" or "missing"
+	Status string `json:"status"` // "ok", "missing", or "skipped" (global entry not managed by melon)
 }
 
 func runList(cmd *cobra.Command, args []string) error {
@@ -82,18 +82,22 @@ func runList(cmd *cobra.Command, args []string) error {
 	if len(deps) == 0 {
 		fmt.Fprintln(cmd.OutOrStdout(), "No skills installed.")
 	} else if flagCheck {
-		targetBases := resolveTargetBases(dir)
+		targetDirs := resolveTargetDirs(dir)
+		global := scope.IsGlobal(dir)
 		for _, dep := range deps {
 			if !placer.ShouldPlaceLocked(dep, dir) {
 				fmt.Fprintf(cmd.OutOrStdout(), "  PACK     %-50s  (not placed)\n", dep.Name+"@"+dep.Version)
 				continue
 			}
 			skillName := skillNameFromDep(dep.Name)
-			for _, base := range targetBases {
-				linkPath := filepath.Join(dir, base, skillName)
-				rel, _ := filepath.Rel(dir, linkPath)
+			for _, targetDir := range targetDirs {
+				linkPath := filepath.Join(targetDir, skillName)
+				rel := scope.Display(dir, linkPath)
 				if _, serr := os.Stat(linkPath); serr != nil {
 					fmt.Fprintf(cmd.OutOrStdout(), "  MISSING  %-50s  %s\n", dep.Name+"@"+dep.Version, rel)
+					anyMissing = true
+				} else if global && !placer.IsManagedLink(linkPath, dir) {
+					fmt.Fprintf(cmd.OutOrStdout(), "  SKIPPED  %-50s  %s (not managed by melon)\n", dep.Name+"@"+dep.Version, rel)
 					anyMissing = true
 				} else {
 					fmt.Fprintf(cmd.OutOrStdout(), "  OK       %-50s  %s\n", dep.Name+"@"+dep.Version, rel)
@@ -137,7 +141,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	if anyMissing {
-		return fmt.Errorf("list --check: one or more skill placements are missing")
+		return fmt.Errorf("list --check: one or more skill placements are missing or not managed by melon")
 	}
 	return nil
 }
@@ -184,18 +188,22 @@ func runListJSON(cmd *cobra.Command, dir string, deps []lockfile.LockedDep) erro
 	// --check: verify symlinks exist in all tool directories.
 	anyMissing := false
 	if flagCheck {
-		targetBases := resolveTargetBases(dir)
+		targetDirs := resolveTargetDirs(dir)
+		global := scope.IsGlobal(dir)
 		for _, dep := range deps {
 			if !placer.ShouldPlaceLocked(dep, dir) {
 				continue // pure packs are never placed
 			}
 			skillName := skillNameFromDep(dep.Name)
-			for _, base := range targetBases {
-				linkPath := filepath.Join(dir, base, skillName)
-				rel, _ := filepath.Rel(dir, linkPath)
+			for _, targetDir := range targetDirs {
+				linkPath := filepath.Join(targetDir, skillName)
+				rel := scope.Display(dir, linkPath)
 				status := "ok"
 				if _, serr := os.Stat(linkPath); serr != nil {
 					status = "missing"
+					anyMissing = true
+				} else if global && !placer.IsManagedLink(linkPath, dir) {
+					status = "skipped"
 					anyMissing = true
 				}
 				out.Check = append(out.Check, listCheckEntry{
@@ -214,7 +222,7 @@ func runListJSON(cmd *cobra.Command, dir string, deps []lockfile.LockedDep) erro
 	}
 
 	if anyMissing {
-		return listErr(cmd, fmt.Errorf("list --check: one or more skill placements are missing"))
+		return listErr(cmd, fmt.Errorf("list --check: one or more skill placements are missing or not managed by melon"))
 	}
 	return nil
 }
@@ -230,23 +238,18 @@ func listErr(cmd *cobra.Command, err error) error {
 	return err
 }
 
-// resolveTargetBases returns the list of tool directories for the project.
-func resolveTargetBases(dir string) []string {
-	manifestPath := manifest.FindPath(dir)
-	m, merr := manifest.Load(manifestPath)
-	var targetBases []string
-	if merr == nil && len(m.Outputs) > 0 {
-		for base := range m.Outputs {
-			targetBases = append(targetBases, base)
-		}
-		sort.Strings(targetBases)
-	} else if merr == nil {
-		targetBases, _ = agents.DeriveTargets(m.HarnessList())
+// resolveTargetDirs returns the absolute skill directories for the project
+// (or the global harness directories with --global).
+func resolveTargetDirs(dir string) []string {
+	m, merr := manifest.Load(manifest.FindPath(dir))
+	if merr != nil {
+		m = manifest.Manifest{}
 	}
-	if len(targetBases) == 0 {
-		targetBases = []string{".agents/skills/"}
+	dirs, err := placer.TargetDirs(m, dir, true)
+	if err != nil {
+		dirs, _ = placer.TargetDirs(manifest.Manifest{}, dir, true)
 	}
-	return targetBases
+	return dirs
 }
 
 // skillNameFromDep extracts the skill directory name from a dep path.

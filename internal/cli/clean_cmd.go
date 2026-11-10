@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/playsthisgame/melon/internal/agents"
 	"github.com/playsthisgame/melon/internal/lockfile"
 	"github.com/playsthisgame/melon/internal/manifest"
+	"github.com/playsthisgame/melon/internal/placer"
 	"github.com/playsthisgame/melon/internal/store"
 	"github.com/spf13/cobra"
 )
@@ -46,7 +46,7 @@ func runClean(cmd *cobra.Command, args []string) error {
 	}
 
 	// List what is currently in .melon/.
-	storeDir := filepath.Join(dir, store.StoreDir)
+	storeDir := store.Dir(dir)
 	entries, err := os.ReadDir(storeDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -78,16 +78,7 @@ func runClean(cmd *cobra.Command, args []string) error {
 	m, manifestErr := manifest.Load(manifestPath)
 	hasManifest := manifestErr == nil
 	if hasManifest {
-		if len(m.Outputs) > 0 {
-			for base := range m.Outputs {
-				skillDirs = append(skillDirs, filepath.Join(dir, base))
-			}
-		} else {
-			targets, _ := agents.DeriveTargets(m.HarnessList())
-			for _, t := range targets {
-				skillDirs = append(skillDirs, filepath.Join(dir, t))
-			}
-		}
+		skillDirs, _ = placer.TargetDirs(m, dir, false)
 	}
 
 	// 3.3 / 2.2 – Remove each orphaned cache entry and any symlinks pointing to it.

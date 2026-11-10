@@ -83,3 +83,34 @@ func DeriveTargets(agentCompat []string) ([]string, error) {
 	sort.Strings(targets)
 	return targets, nil
 }
+
+// DeriveGlobalTargets returns the deduplicated, sorted list of user-global
+// skill directories (unexpanded "~/..." paths) for each agent in agentCompat.
+// Returns ErrUnknownAgent if any agent is not in the convention table.
+//
+// Example: agentCompat=["claude-code"] → ["~/.claude/skills/"]
+func DeriveGlobalTargets(agentCompat []string) ([]string, error) {
+	seen := make(map[string]struct{}, len(agentCompat))
+	for _, agent := range agentCompat {
+		conv, ok := conventions[agent]
+		if !ok {
+			return nil, fmt.Errorf("%w: %q", ErrUnknownAgent, agent)
+		}
+		seen[conv.Global] = struct{}{}
+	}
+	targets := make([]string, 0, len(seen))
+	for t := range seen {
+		targets = append(targets, t)
+	}
+	sort.Strings(targets)
+	return targets, nil
+}
+
+// GlobalDir returns the unexpanded user-global skills directory for agent.
+func GlobalDir(agent string) (string, error) {
+	conv, ok := conventions[agent]
+	if !ok {
+		return "", fmt.Errorf("%w: %q", ErrUnknownAgent, agent)
+	}
+	return conv.Global, nil
+}
