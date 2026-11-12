@@ -422,7 +422,7 @@ melon search git workflow  # find git workflow skills
 
 Featured skills appear at the top of results. If nothing matches, melon will tell you and suggest submitting to the index.
 
-If your project has an `index` block in `melon.yaml`, search queries your custom registry instead of (or in addition to) the public melon index. Set `public_index: true` to see only your private skills.
+If your project has an `index` block in `melon.yaml`, search queries your custom registry instead of (or in addition to) the public melon index. Set `public_index: false` to see only your private skills.
 
 ### `melon info`
 
@@ -535,6 +535,8 @@ index:
 The index URL can be a GitHub path (`github.com/owner/repo/path/to/index.yaml`), a GitHub tree URL, or a raw HTTPS URL. With `public_index: false`, search results and info lookups are scoped to your internal registry, so developers see only the approved, curated list of skills without the noise of the full public index.
 
 Set `public_index: true` (the default) if you want to layer your private registry on top of the public one, giving developers access to both.
+
+**Private repositories.** If the registry lives in a private GitHub repository (including a GitHub Enterprise Cloud organization), set `GITHUB_TOKEN` (or `GH_TOKEN`) to a token that can read it, for example `export GITHUB_TOKEN=$(gh auth token)`. Melon sends the token only to GitHub hosts (`github.com`, `raw.githubusercontent.com`, `api.github.com`), never to other index URLs. If an index can't be loaded, `melon search` and `melon info` print a warning that names it and still show results from your other indices.
 
 ### Distributing the policy
 

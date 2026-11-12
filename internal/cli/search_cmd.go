@@ -33,22 +33,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	// 2. Fetch and merge entries across all active index URLs.
 	// Custom index results come first; public index entries with duplicate names
 	// are suppressed.
-	seen := make(map[string]struct{})
-	var allEntries []index.Entry
-	var lastErr error
-	for _, u := range urls {
-		entries, err := index.Fetch(u)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		for _, e := range entries {
-			if _, dup := seen[e.Name]; !dup {
-				seen[e.Name] = struct{}{}
-				allEntries = append(allEntries, e)
-			}
-		}
-	}
+	allEntries := loadIndexEntries(cmd, urls)
 
 	// 3. Search across merged entries.
 	var items []searchResultItem
@@ -67,9 +52,6 @@ func runSearch(cmd *cobra.Command, args []string) error {
 
 	// 4. No results.
 	if len(items) == 0 {
-		if lastErr != nil {
-			fmt.Fprintf(cmd.OutOrStdout(), "warning: could not load curated index (%v)\n", lastErr)
-		}
 		fmt.Fprintf(cmd.OutOrStdout(), "No skills found for %q.\n", term)
 		return nil
 	}
@@ -99,6 +81,33 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(cmd.OutOrStdout(), "%s%s\t%s\t%s\n", star, path, r.author, r.description)
 	}
 	return nil
+}
+
+// indexFetchFn fetches one index. Overridable in tests.
+var indexFetchFn = index.Fetch
+
+// loadIndexEntries fetches every index in urls and merges their entries in
+// order: an entry whose name was already seen in an earlier index is dropped.
+// An index that fails to load is reported on stderr and skipped, so one
+// unreachable (for example, private and unauthenticated) index never hides
+// results from the others, and is never silently ignored either.
+func loadIndexEntries(cmd *cobra.Command, urls []string) []index.Entry {
+	seen := make(map[string]struct{})
+	var all []index.Entry
+	for _, u := range urls {
+		entries, err := indexFetchFn(u)
+		if err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "warning: could not load index: %v\n", err)
+			continue
+		}
+		for _, e := range entries {
+			if _, dup := seen[e.Name]; !dup {
+				seen[e.Name] = struct{}{}
+				all = append(all, e)
+			}
+		}
+	}
+	return all
 }
 
 // resolveIndexURLs returns the ordered list of index URLs to query, based on

@@ -31,3 +31,25 @@ When both a custom index and the public index are active, the CLI SHALL present 
 #### Scenario: No overlap
 - **WHEN** the custom index and public index return distinct entries
 - **THEN** all custom index entries appear before all public index entries
+
+### Requirement: Private GitHub indices
+When an index URL is on a GitHub host (`github.com`, `raw.githubusercontent.com`, `api.github.com`) and `GITHUB_TOKEN` (or, when unset, `GH_TOKEN`) is set, the CLI SHALL send it as a Bearer token so indices in private repositories can be read. The token SHALL NOT be sent to any other host.
+
+#### Scenario: Private index with token
+- **WHEN** `index.urls` contains `github.com/my-company/skill-registry/index.yaml` in a private repository and `GITHUB_TOKEN` can read it
+- **THEN** `melon search` and `melon info` SHALL include that index's entries
+
+#### Scenario: Private index without token
+- **WHEN** the private index returns 404 and no token is set
+- **THEN** the CLI SHALL warn on stderr naming the index URL and suggesting `GITHUB_TOKEN`
+
+#### Scenario: Token not sent to other hosts
+- **WHEN** an index URL is on a non-GitHub host and `GITHUB_TOKEN` is set
+- **THEN** the request SHALL NOT carry an Authorization header
+
+### Requirement: Failed indices are reported, not hidden
+When any active index fails to load, the CLI SHALL print a warning to stderr naming it and continue with the remaining indices, whether or not the others return results.
+
+#### Scenario: Private index fails, public index succeeds
+- **WHEN** the custom index cannot be loaded and the public index returns matches
+- **THEN** the matches SHALL be shown and a warning for the custom index SHALL be printed to stderr
