@@ -41,7 +41,19 @@ When an index URL is on a GitHub host (`github.com`, `raw.githubusercontent.com`
 
 #### Scenario: Private index without token
 - **WHEN** the private index returns 404 and no token is set
-- **THEN** the CLI SHALL warn on stderr naming the index URL and suggesting `GITHUB_TOKEN`
+- **THEN** the CLI SHALL warn on stderr that GitHub refused access to the index (named in its `github.com/...` form), explain that this is an access problem rather than a melon error, and show the fix: `export GITHUB_TOKEN=$(gh auth token)` when `gh` is installed, otherwise a generic `export GITHUB_TOKEN=<token>`
+
+#### Scenario: Token cannot read the private index
+- **WHEN** a token is set and GitHub still refuses the index
+- **THEN** the warning SHALL name the variable the token came from and say to check the URL and the token's read access to the repository
+
+#### Scenario: Invalid token does not break public indices
+- **WHEN** the token is invalid or expired and GitHub refuses a request carrying it
+- **THEN** the CLI SHALL retry once without the token, so public indices still load
+
+#### Scenario: No results while an index failed
+- **WHEN** no entries match and at least one index failed to load
+- **THEN** the result line SHALL say no skills were found in the indices melon could load, with how many failed, rather than a plain "No skills found"
 
 #### Scenario: Token not sent to other hosts
 - **WHEN** an index URL is on a non-GitHub host and `GITHUB_TOKEN` is set

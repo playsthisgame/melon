@@ -57,7 +57,7 @@ func runInfo(cmd *cobra.Command, args []string) error {
 
 	// Look up the skill across all active indices for description and author.
 	var description, author string
-	allEntries := loadIndexEntries(cmd, resolveIndexURLs())
+	allEntries, _ := loadIndexEntries(cmd, resolveIndexURLs())
 	if entry := index.Find(allEntries, path); entry != nil {
 		description = entry.Description
 		author = entry.Author

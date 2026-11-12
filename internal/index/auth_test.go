@@ -1,6 +1,7 @@
 package index
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -97,4 +98,64 @@ func TestFetch_PrivateGitHubIndex_WrongToken_Hints(t *testing.T) {
 	_, err := Fetch(srv.URL + "/index.yaml")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "GITHUB_TOKEN can read this repository")
+}
+
+func TestFetch_PrivateGitHubIndex_ReturnsAccessError(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "")
+	t.Setenv("GH_TOKEN", "")
+	var auth string
+	srv := privateServer(t, "secret", &auth)
+	treatAsGitHub(t, srv)
+
+	_, err := Fetch(srv.URL + "/index.yaml")
+	var accessErr *AccessError
+	require.ErrorAs(t, err, &accessErr)
+	assert.False(t, accessErr.HadToken)
+	assert.Equal(t, "404 Not Found", accessErr.Status)
+}
+
+func TestFetch_OtherHost404_IsNotAccessError(t *testing.T) {
+	srv := httptest.NewServer(http.NotFoundHandler())
+	t.Cleanup(srv.Close)
+	_, err := Fetch(srv.URL + "/index.yaml")
+	var accessErr *AccessError
+	assert.False(t, errors.As(err, &accessErr))
+}
+
+// A bad or expired token makes GitHub answer 404 even for public content;
+// Fetch must fall back to an anonymous request so the public index still loads.
+func TestFetch_BadToken_PublicIndexStillLoads(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "expired")
+	var calls []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		calls = append(calls, auth)
+		if auth != "" { // any token is rejected; anonymous is fine (public)
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(authIndexYAML))
+	}))
+	t.Cleanup(srv.Close)
+	treatAsGitHub(t, srv)
+
+	entries, err := Fetch(srv.URL + "/index.yaml")
+	require.NoError(t, err)
+	assert.Len(t, entries, 1)
+	assert.Equal(t, []string{"Bearer expired", ""}, calls, "one retry without the token")
+}
+
+func TestFetch_GoodToken_NoRetry(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "secret")
+	calls := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		_, _ = w.Write([]byte(authIndexYAML))
+	}))
+	t.Cleanup(srv.Close)
+	treatAsGitHub(t, srv)
+
+	_, err := Fetch(srv.URL + "/index.yaml")
+	require.NoError(t, err)
+	assert.Equal(t, 1, calls)
 }
