@@ -65,7 +65,7 @@ openspec/                 — BDD-style specs and archived change proposals
 - **Go 1.25+** is required (see `go.mod`). Uses recent language features.
 - **`CGO_ENABLED=0`** — pure Go, no C deps.
 - **Git required at runtime:** Fetcher shells out to `git` via `exec.Command`. Modern git with sparse-checkout support is needed.
-- **`GITHUB_TOKEN`** env var: Used by the resolver and GitHub client for higher API rate limits. Not required but recommended.
+- **`GITHUB_TOKEN`** env var (or `GH_TOKEN`), read via `github.Token()`: used by the resolver, GitHub client and index fetcher for higher API rate limits and to read private repositories (e.g. a private `index` registry). The index fetcher only sends it to GitHub hosts.
 - **Agent conventions** are hardcoded in `internal/agents/agents.go`. Adding a new harness means adding an entry there.
 
 ## melon.yaml Schema

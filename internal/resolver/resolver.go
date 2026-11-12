@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"sort"
 	"strings"
 
 	"gopkg.in/yaml.v3"
 
+	gh "github.com/playsthisgame/melon/internal/github"
 	"github.com/playsthisgame/melon/internal/manifest"
 	"github.com/playsthisgame/melon/pkg/semver"
 )
@@ -187,7 +187,7 @@ func Resolve(
 // DefaultFetchManifest fetches a dependency's melon.yaml from the GitHub raw
 // content API. Returns an empty Manifest and nil error when the file is absent
 // (HTTP 404) — missing manifests are treated as deps with no transitive deps.
-// Respects the GITHUB_TOKEN environment variable if set.
+// Sends the GitHub token (GITHUB_TOKEN or GH_TOKEN) when set.
 func DefaultFetchManifest(repoURL, gitTag, subdir string) (manifest.Manifest, error) {
 	// repoURL is "https://github.com/owner/repo"
 	ownerRepo := strings.TrimPrefix(repoURL, "https://github.com/")
@@ -201,7 +201,7 @@ func DefaultFetchManifest(repoURL, gitTag, subdir string) (manifest.Manifest, er
 	if err != nil {
 		return manifest.Manifest{}, fmt.Errorf("resolver: build request for %s: %w", rawURL, err)
 	}
-	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+	if token := gh.Token(); token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 

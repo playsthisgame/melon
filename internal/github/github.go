@@ -15,8 +15,18 @@ import (
 
 const defaultAPIBase = "https://api.github.com"
 
-// Client is a thin GitHub REST API client. It reads GITHUB_TOKEN from the
-// environment and sends it as a Bearer token when present.
+// Token returns the GitHub token from the environment: GITHUB_TOKEN, or
+// GH_TOKEN (the variable the gh CLI reads) when GITHUB_TOKEN is unset. It is
+// needed to read private repositories and raises API rate limits.
+func Token() string {
+	if t := os.Getenv("GITHUB_TOKEN"); t != "" {
+		return t
+	}
+	return os.Getenv("GH_TOKEN")
+}
+
+// Client is a thin GitHub REST API client. It sends Token() as a Bearer token
+// when present.
 type Client struct {
 	http    *http.Client
 	token   string
@@ -27,7 +37,7 @@ type Client struct {
 func New() *Client {
 	return &Client{
 		http:    &http.Client{},
-		token:   os.Getenv("GITHUB_TOKEN"),
+		token:   Token(),
 		apiBase: defaultAPIBase,
 	}
 }

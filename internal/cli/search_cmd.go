@@ -4,6 +4,9 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -33,22 +36,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	// 2. Fetch and merge entries across all active index URLs.
 	// Custom index results come first; public index entries with duplicate names
 	// are suppressed.
-	seen := make(map[string]struct{})
-	var allEntries []index.Entry
-	var lastErr error
-	for _, u := range urls {
-		entries, err := index.Fetch(u)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		for _, e := range entries {
-			if _, dup := seen[e.Name]; !dup {
-				seen[e.Name] = struct{}{}
-				allEntries = append(allEntries, e)
-			}
-		}
-	}
+	allEntries, failedIndices := loadIndexEntries(cmd, urls)
 
 	// 3. Search across merged entries.
 	var items []searchResultItem
@@ -67,8 +55,10 @@ func runSearch(cmd *cobra.Command, args []string) error {
 
 	// 4. No results.
 	if len(items) == 0 {
-		if lastErr != nil {
-			fmt.Fprintf(cmd.OutOrStdout(), "warning: could not load curated index (%v)\n", lastErr)
+		if failedIndices > 0 {
+			fmt.Fprintf(cmd.OutOrStdout(), "No skills found for %q in the indices melon could load (%d of %d failed, see above).\n",
+				term, failedIndices, len(urls))
+			return nil
 		}
 		fmt.Fprintf(cmd.OutOrStdout(), "No skills found for %q.\n", term)
 		return nil
@@ -99,6 +89,92 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		fmt.Fprintf(cmd.OutOrStdout(), "%s%s\t%s\t%s\n", star, path, r.author, r.description)
 	}
 	return nil
+}
+
+// indexFetchFn fetches one index. Overridable in tests.
+var indexFetchFn = index.Fetch
+
+// lookPathFn finds an executable on PATH. Overridable in tests. Melon only
+// checks whether gh is installed, to suggest it; it never runs it.
+var lookPathFn = exec.LookPath
+
+// loadIndexEntries fetches every index in urls and merges their entries in
+// order: an entry whose name was already seen in an earlier index is dropped.
+// An index that fails to load is reported on stderr and skipped, so one
+// unreachable (for example, private and unauthenticated) index never hides
+// results from the others, and is never silently ignored either. It returns
+// the merged entries and how many indices failed.
+func loadIndexEntries(cmd *cobra.Command, urls []string) ([]index.Entry, int) {
+	seen := make(map[string]struct{})
+	var all []index.Entry
+	failed := 0
+	for _, u := range urls {
+		entries, err := indexFetchFn(u)
+		if err != nil {
+			failed++
+			printIndexError(cmd.ErrOrStderr(), err)
+			continue
+		}
+		for _, e := range entries {
+			if _, dup := seen[e.Name]; !dup {
+				seen[e.Name] = struct{}{}
+				all = append(all, e)
+			}
+		}
+	}
+	return all, failed
+}
+
+// printIndexError explains why an index could not be loaded. GitHub access
+// failures get a plain explanation and the exact fix, so a missing or
+// insufficient token is not mistaken for a melon bug.
+func printIndexError(w io.Writer, err error) {
+	var accessErr *index.AccessError
+	if !errors.As(err, &accessErr) {
+		fmt.Fprintf(w, "warning: could not load index: %v\n", err)
+		return
+	}
+
+	where := displayIndexURL(accessErr.URL)
+	if !accessErr.HadToken {
+		fix := "export GITHUB_TOKEN=<a token that can read the repository>"
+		if _, err := lookPathFn("gh"); err == nil {
+			fix = "export GITHUB_TOKEN=$(gh auth token)"
+		}
+		fmt.Fprintf(w, "warning: GitHub refused access to index %s (%s).\n", where, accessErr.Status)
+		fmt.Fprintln(w, "  GitHub answers this way for a private repository when no token is sent,")
+		fmt.Fprintln(w, "  so this is an access problem, not a melon error. Give melon a token that")
+		fmt.Fprintln(w, "  can read the repository, then search again:")
+		fmt.Fprintf(w, "    %s\n", fix)
+		return
+	}
+
+	tokenVar := "GITHUB_TOKEN"
+	if os.Getenv("GITHUB_TOKEN") == "" {
+		tokenVar = "GH_TOKEN"
+	}
+	fmt.Fprintf(w, "warning: GitHub refused access to index %s (%s) using the token in %s.\n", where, accessErr.Status, tokenVar)
+	fmt.Fprintln(w, "  Either the URL is wrong or the token cannot read the repository. Check the")
+	fmt.Fprintln(w, "  URL, and that the token has read access: a fine-grained token needs the")
+	fmt.Fprintln(w, "  repository and Contents: read, and an organization with SSO must authorize it.")
+}
+
+// displayIndexURL shows a raw GitHub URL in the github.com/owner/repo/path form
+// users write in melon.yaml (with blob/<branch> when the branch is not main).
+func displayIndexURL(raw string) string {
+	const prefix = "https://raw.githubusercontent.com/"
+	if !strings.HasPrefix(raw, prefix) {
+		return raw
+	}
+	parts := strings.SplitN(strings.TrimPrefix(raw, prefix), "/", 4)
+	if len(parts) < 4 {
+		return raw
+	}
+	owner, repo, branch, path := parts[0], parts[1], parts[2], parts[3]
+	if branch == "main" {
+		return fmt.Sprintf("github.com/%s/%s/%s", owner, repo, path)
+	}
+	return fmt.Sprintf("github.com/%s/%s/blob/%s/%s", owner, repo, branch, path)
 }
 
 // resolveIndexURLs returns the ordered list of index URLs to query, based on
