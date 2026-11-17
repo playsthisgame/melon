@@ -32,6 +32,9 @@ agent_directory_conventions:
   opencode:
     project: .agents/skills/
     global: ~/.config/opencode/skills/
+  devin:
+    project: .devin/skills/
+    global: ~/.config/devin/skills/
   windsurf:
     project: .windsurf/skills/
     global: ~/.codeium/windsurf/skills/

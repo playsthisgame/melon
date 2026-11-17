@@ -169,6 +169,7 @@ tags: []
 |---|---|---|
 | `claude-code` | `.claude/skills/` | `~/.claude/skills/` |
 | `cursor` | `.agents/skills/` | `~/.cursor/skills/` |
+| `devin` | `.devin/skills/` | `~/.config/devin/skills/` |
 | `windsurf` | `.windsurf/skills/` | `~/.codeium/windsurf/skills/` |
 | `roo` | `.roo/skills/` | `~/.roo/skills/` |
 | `codex` | `.agents/skills/` | `~/.codex/skills/` |
