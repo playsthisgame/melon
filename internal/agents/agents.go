@@ -24,6 +24,7 @@ type Convention struct {
 var conventions = map[string]Convention{
 	"claude-code":    {Project: ".claude/skills/", Global: "~/.claude/skills/"},
 	"cursor":         {Project: ".agents/skills/", Global: "~/.cursor/skills/"},
+	"devin":          {Project: ".devin/skills/", Global: "~/.config/devin/skills/"},
 	"codex":          {Project: ".agents/skills/", Global: "~/.codex/skills/"},
 	"opencode":       {Project: ".agents/skills/", Global: "~/.config/opencode/skills/"},
 	"windsurf":       {Project: ".windsurf/skills/", Global: "~/.codeium/windsurf/skills/"},

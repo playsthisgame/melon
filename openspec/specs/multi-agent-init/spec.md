@@ -22,7 +22,7 @@
 
 #### Scenario: Full agent list is presented
 - **WHEN** the multi-select prompt is shown
-- **THEN** all 10 known agents (amp, cline, claude-code, codex, cursor, gemini-cli, github-copilot, opencode, roo, windsurf) appear as options
+- **THEN** all 11 known agents (amp, cline, claude-code, codex, cursor, devin, gemini-cli, github-copilot, opencode, roo, windsurf) appear as options
 
 ### Requirement: mln init writes CLI version to melon.yml
 

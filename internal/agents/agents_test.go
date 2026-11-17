@@ -16,6 +16,7 @@ func TestDeriveOutputs_KnownAgents(t *testing.T) {
 	}{
 		{"claude-code", ".claude/skills/"},
 		{"cursor", ".agents/skills/"},
+		{"devin", ".devin/skills/"},
 		{"codex", ".agents/skills/"},
 		{"opencode", ".agents/skills/"},
 		{"windsurf", ".windsurf/skills/"},
@@ -66,6 +67,12 @@ func TestDeriveOutputs_Empty(t *testing.T) {
 func TestKnownAgents_ContainsExpected(t *testing.T) {
 	known := agents.KnownAgents()
 	expected := []string{"amp", "claude-code", "cline", "codex", "cursor",
-		"gemini-cli", "github-copilot", "opencode", "roo", "windsurf"}
-	assert.Equal(t, expected, known, "KnownAgents should return all 10 agents sorted")
+		"devin", "gemini-cli", "github-copilot", "opencode", "roo", "windsurf"}
+	assert.Equal(t, expected, known, "KnownAgents should return all 11 agents sorted")
+}
+
+func TestGlobalDir_Devin(t *testing.T) {
+	dir, err := agents.GlobalDir("devin")
+	require.NoError(t, err)
+	assert.Equal(t, "~/.config/devin/skills/", dir)
 }
