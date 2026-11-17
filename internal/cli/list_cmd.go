@@ -245,9 +245,9 @@ func resolveTargetDirs(dir string) []string {
 	if merr != nil {
 		m = manifest.Manifest{}
 	}
-	dirs, err := placer.TargetDirs(m, dir, true)
+	dirs, err := placer.TargetDirs(m, dir)
 	if err != nil {
-		dirs, _ = placer.TargetDirs(manifest.Manifest{}, dir, true)
+		dirs, _ = placer.TargetDirs(manifest.Manifest{}, dir)
 	}
 	return dirs
 }

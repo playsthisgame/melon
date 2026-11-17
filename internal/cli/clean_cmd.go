@@ -78,7 +78,7 @@ func runClean(cmd *cobra.Command, args []string) error {
 	m, manifestErr := manifest.Load(manifestPath)
 	hasManifest := manifestErr == nil
 	if hasManifest {
-		skillDirs, _ = placer.TargetDirs(m, dir, false)
+		skillDirs, _ = placer.TargetDirs(m, dir)
 	}
 
 	// 3.3 / 2.2 – Remove each orphaned cache entry and any symlinks pointing to it.

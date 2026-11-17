@@ -120,3 +120,23 @@ func TestUnplace_MissingSymlinkNoError(t *testing.T) {
 	locked := []lockfile.LockedDep{{Name: "github.com/alice/pdf-skill", Version: "1.2.0"}}
 	require.NoError(t, placer.Unplace(locked, m, projectDir, &bytes.Buffer{}))
 }
+
+// Regression for #53: with no harnesses or outputs, Place links into the default
+// .agents/skills/, so Unplace must remove from there too.
+func TestUnplace_NoHarnesses_RemovesFromDefaultDir(t *testing.T) {
+	projectDir := t.TempDir()
+	dep := makeDep(t, projectDir, "github.com/alice/pdf-skill", "1.2.0")
+
+	m := manifest.Manifest{}
+	require.NoError(t, placer.Place([]resolver.ResolvedDep{dep}, m, projectDir, &bytes.Buffer{}))
+
+	linkPath := filepath.Join(projectDir, ".agents/skills/pdf-skill")
+	_, err := os.Lstat(linkPath)
+	require.NoError(t, err, "symlink must exist before Unplace")
+
+	locked := []lockfile.LockedDep{{Name: dep.Name, Version: dep.Version}}
+	require.NoError(t, placer.Unplace(locked, m, projectDir, &bytes.Buffer{}))
+
+	_, err = os.Lstat(linkPath)
+	assert.True(t, os.IsNotExist(err), "symlink must be gone from .agents/skills after Unplace")
+}

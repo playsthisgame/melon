@@ -35,18 +35,18 @@ func cacheSkill(t *testing.T, root string, dep resolver.ResolvedDep) string {
 func TestTargetDirs_Global(t *testing.T) {
 	home, root := globalSetup(t)
 
-	dirs, err := TargetDirs(manifest.Manifest{Harnesses: []string{"opencode", "claude-code"}}, root, true)
+	dirs, err := TargetDirs(manifest.Manifest{Harnesses: []string{"opencode", "claude-code"}}, root)
 	require.NoError(t, err)
 	assert.Equal(t, []string{
 		filepath.Join(home, ".claude", "skills"),
 		filepath.Join(home, ".config", "opencode", "skills"),
 	}, dirs)
 
-	dirs, err = TargetDirs(manifest.Manifest{}, root, true)
+	dirs, err = TargetDirs(manifest.Manifest{}, root)
 	require.NoError(t, err)
 	assert.Equal(t, []string{filepath.Join(home, ".agents", "skills")}, dirs)
 
-	dirs, err = TargetDirs(manifest.Manifest{Outputs: map[string]string{"~/custom/skills/": "*"}}, root, true)
+	dirs, err = TargetDirs(manifest.Manifest{Outputs: map[string]string{"~/custom/skills/": "*"}}, root)
 	require.NoError(t, err)
 	assert.Equal(t, []string{filepath.Join(home, "custom", "skills")}, dirs)
 }
@@ -116,4 +116,23 @@ func TestUnplace_Global_RemovesManagedLink(t *testing.T) {
 	require.NoError(t, Unplace([]lockfile.LockedDep{{Name: dep.Name, Version: dep.Version}}, m, root, &out))
 	_, err := os.Lstat(filepath.Join(home, ".claude", "skills", "pdf"))
 	assert.True(t, os.IsNotExist(err))
+}
+
+// Regression for #53: with no harnesses or outputs, Place links into the default
+// ~/.agents/skills/, so Unplace must remove from there too.
+func TestUnplace_Global_NoHarnesses_RemovesFromDefaultDir(t *testing.T) {
+	home, root := globalSetup(t)
+	dep := resolver.ResolvedDep{Name: "github.com/alice/skills/pdf", Version: "1.0.0", Entrypoint: "SKILL.md"}
+	cacheSkill(t, root, dep)
+	m := manifest.Manifest{}
+	var out bytes.Buffer
+	require.NoError(t, Place([]resolver.ResolvedDep{dep}, m, root, &out))
+
+	link := filepath.Join(home, ".agents", "skills", "pdf")
+	_, err := os.Lstat(link)
+	require.NoError(t, err, "symlink must exist before Unplace")
+
+	require.NoError(t, Unplace([]lockfile.LockedDep{{Name: dep.Name, Version: dep.Version}}, m, root, &out))
+	_, err = os.Lstat(link)
+	assert.True(t, os.IsNotExist(err), "symlink must be gone from ~/.agents/skills after Unplace")
 }
