@@ -27,6 +27,11 @@ After updating `melon.yml`, `mln remove` SHALL run the full install pipeline, wh
 - **WHEN** `alice/pdf-skill` is linked as `pdf-skill` in `.claude/skills/` and the user runs `mln remove alice/pdf-skill`
 - **THEN** the symlink at `.claude/skills/pdf-skill` SHALL no longer exist after the command completes
 
+#### Scenario: Symlink is removed from the default directory when no harness is configured
+
+- **WHEN** `melon.yaml` declares neither `harnesses` nor `outputs`, so `alice/pdf-skill` was linked into the default `.agents/skills/` (`~/.agents/skills/` for `--global`), and the user runs `mln remove alice/pdf-skill`
+- **THEN** the symlink at `.agents/skills/pdf-skill` (or `~/.agents/skills/pdf-skill`) SHALL no longer exist after the command completes
+
 #### Scenario: Cache entry is removed from .melon/
 
 - **WHEN** the user runs `mln remove alice/pdf-skill` successfully

@@ -47,9 +47,11 @@ func ShouldPlaceLocked(dep lockfile.LockedDep, projectDir string) bool {
 // For a project they are m.Outputs keys (or the harnesses' project
 // directories) joined to projectDir. For the global root they are the
 // harnesses' global directories, with m.Outputs keys read as "~/..." or
-// home-relative paths. When nothing is configured and withDefault is set, the
-// cross-tool .agents/skills/ directory (~/.agents/skills/ globally) is used.
-func TargetDirs(m manifest.Manifest, projectDir string, withDefault bool) ([]string, error) {
+// home-relative paths. When nothing is configured, the cross-tool
+// .agents/skills/ directory (~/.agents/skills/ globally) is used. Place,
+// Unplace, clean and list all go through this so they agree on where skills
+// live.
+func TargetDirs(m manifest.Manifest, projectDir string) ([]string, error) {
 	global := scope.IsGlobal(projectDir)
 
 	var bases []string
@@ -68,7 +70,7 @@ func TargetDirs(m manifest.Manifest, projectDir string, withDefault bool) ([]str
 			return nil, err
 		}
 	}
-	if len(bases) == 0 && withDefault {
+	if len(bases) == 0 {
 		if global {
 			bases = []string{"~/.agents/skills/"}
 		} else {
@@ -107,12 +109,13 @@ func skillName(depName string) string {
 }
 
 // Unplace removes the agent directory symlink for each dep in every agent
-// directory derived from m.HarnessList() (or m.Outputs if declared). Missing
+// directory derived from m.HarnessList() (or m.Outputs if declared, or the
+// default .agents/skills/ directory when neither is set, matching Place). Missing
 // symlinks are silently ignored. For the global root, only symlinks that point
 // into melon's store are removed, so skills the user put in a global harness
 // directory themselves are never touched. Returns the first error encountered.
 func Unplace(deps []lockfile.LockedDep, m manifest.Manifest, projectDir string, out io.Writer) error {
-	targetDirs, err := TargetDirs(m, projectDir, false)
+	targetDirs, err := TargetDirs(m, projectDir)
 	if err != nil {
 		return fmt.Errorf("placer: %w", err)
 	}
@@ -158,7 +161,7 @@ func Unplace(deps []lockfile.LockedDep, m manifest.Manifest, projectDir string, 
 // every skip is reported once all skills are placed. Returns the first error
 // encountered.
 func Place(deps []resolver.ResolvedDep, m manifest.Manifest, projectDir string, out io.Writer) error {
-	targetDirs, err := TargetDirs(m, projectDir, true)
+	targetDirs, err := TargetDirs(m, projectDir)
 	if err != nil {
 		return fmt.Errorf("placer: %w", err)
 	}
