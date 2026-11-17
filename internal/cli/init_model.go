@@ -63,11 +63,11 @@ func (d multiSelectDelegate) Render(w io.Writer, m list.Model, index int, item l
 	}
 	line := cursor + check + label
 	if d.selected[index] {
-		fmt.Fprintln(w, selectedItem.Render(line))
+		fmt.Fprint(w, selectedItem.Render(line))
 	} else if index == m.Index() {
-		fmt.Fprintln(w, normalItem.Render(line))
+		fmt.Fprint(w, normalItem.Render(line))
 	} else {
-		fmt.Fprintln(w, dimItem.Render(line))
+		fmt.Fprint(w, dimItem.Render(line))
 	}
 }
 

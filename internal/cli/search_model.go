@@ -15,6 +15,28 @@ import (
 // removeModel use this to cap their list height to the available terminal space.
 const listReservedRows = 3
 
+// fitListToTerminal sizes l for a terminal termHeight rows tall. The list gets
+// the rows left after listReservedRows, but never more than maxHeight (its
+// content-capped height), so it grows back after a resize as well as shrinking.
+//
+// bubbles' per-page math does not always leave room for the pagination row, so
+// the height is reduced until the rendered list really fits. Output taller than
+// the terminal makes bubbletea drop lines from the top, which is where the
+// cursor is. The cursor's item is re-selected so its page stays in view.
+func fitListToTerminal(l *list.Model, termHeight, maxHeight int) {
+	available := termHeight - listReservedRows
+	if available < 1 {
+		available = 1
+	}
+	h := min(available, maxHeight)
+	l.SetHeight(h)
+	for h > 1 && lipgloss.Height(l.View()) > available {
+		h--
+		l.SetHeight(h)
+	}
+	l.Select(l.Index())
+}
+
 // searchResultItem is a single entry in the search results list.
 type searchResultItem struct {
 	path        string
@@ -34,8 +56,8 @@ type searchMultiSelectDelegate struct {
 	selected map[int]bool
 }
 
-func (d searchMultiSelectDelegate) Height() int                              { return 2 }
-func (d searchMultiSelectDelegate) Spacing() int                             { return 0 }
+func (d searchMultiSelectDelegate) Height() int                             { return 2 }
+func (d searchMultiSelectDelegate) Spacing() int                            { return 0 }
 func (d searchMultiSelectDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 
 func (d searchMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
@@ -83,8 +105,8 @@ func (d searchMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, 
 	if author != "" {
 		nameLine += nameStyle.Render(author)
 	}
-	fmt.Fprintln(w, nameLine)
-	fmt.Fprintln(w, descStyle.Render(descLine))
+	fmt.Fprint(w, nameLine+"\n")
+	fmt.Fprint(w, descStyle.Render(descLine))
 }
 
 var (
@@ -96,10 +118,11 @@ var (
 
 // searchModel is a bubbletea model for the interactive search results list.
 type searchModel struct {
-	list     list.Model
-	sel      map[int]bool
-	selected []string
-	quitting bool
+	list      list.Model
+	maxHeight int // content-capped list height; the list never grows past it
+	sel       map[int]bool
+	selected  []string
+	quitting  bool
 }
 
 func newSearchModel(results []searchResultItem) searchModel {
@@ -123,7 +146,7 @@ func newSearchModel(results []searchResultItem) searchModel {
 	l.SetFilteringEnabled(false)
 	l.SetShowHelp(false)
 
-	return searchModel{list: l, sel: sel}
+	return searchModel{list: l, maxHeight: height, sel: sel}
 }
 
 func (m searchModel) Init() tea.Cmd { return nil }
@@ -131,16 +154,7 @@ func (m searchModel) Init() tea.Cmd { return nil }
 func (m searchModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		available := msg.Height - listReservedRows
-		if available < 2 {
-			available = 2
-		}
-		// Only shrink to fit the terminal. Expanding beyond the initial
-		// content-capped height causes the bubbles list to scroll its
-		// viewport to the bottom, hiding the top results.
-		if available < m.list.Height() {
-			m.list.SetHeight(available)
-		}
+		fitListToTerminal(&m.list, msg.Height, m.maxHeight)
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.Type {

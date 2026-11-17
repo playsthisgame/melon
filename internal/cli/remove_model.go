@@ -26,8 +26,8 @@ type removeMultiSelectDelegate struct {
 	selected map[int]bool
 }
 
-func (d removeMultiSelectDelegate) Height() int                              { return 1 }
-func (d removeMultiSelectDelegate) Spacing() int                             { return 0 }
+func (d removeMultiSelectDelegate) Height() int                             { return 1 }
+func (d removeMultiSelectDelegate) Spacing() int                            { return 0 }
 func (d removeMultiSelectDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 
 func (d removeMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
@@ -55,15 +55,16 @@ func (d removeMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, 
 		line += " " + label.Render(fmt.Sprintf("[pack · %s]", count(r.skills, "skill")))
 	}
 	line += style.Render("  " + r.version)
-	fmt.Fprintln(w, line)
+	fmt.Fprint(w, line)
 }
 
 // removeModel is a bubbletea model for the interactive remove skill list.
 type removeModel struct {
-	list     list.Model
-	sel      map[int]bool
-	selected []string
-	quitting bool
+	list      list.Model
+	maxHeight int // content-capped list height; the list never grows past it
+	sel       map[int]bool
+	selected  []string
+	quitting  bool
 }
 
 func newRemoveModel(skills []removeSkillItem) removeModel {
@@ -86,7 +87,7 @@ func newRemoveModel(skills []removeSkillItem) removeModel {
 	l.SetFilteringEnabled(false)
 	l.SetShowHelp(false)
 
-	return removeModel{list: l, sel: sel}
+	return removeModel{list: l, maxHeight: height, sel: sel}
 }
 
 func (m removeModel) Init() tea.Cmd { return nil }
@@ -94,13 +95,7 @@ func (m removeModel) Init() tea.Cmd { return nil }
 func (m removeModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		available := msg.Height - listReservedRows
-		if available < 2 {
-			available = 2
-		}
-		if available < m.list.Height() {
-			m.list.SetHeight(available)
-		}
+		fitListToTerminal(&m.list, msg.Height, m.maxHeight)
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.Type {

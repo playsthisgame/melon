@@ -26,8 +26,8 @@ type updateMultiSelectDelegate struct {
 	selected map[int]bool
 }
 
-func (d updateMultiSelectDelegate) Height() int                              { return 1 }
-func (d updateMultiSelectDelegate) Spacing() int                             { return 0 }
+func (d updateMultiSelectDelegate) Height() int                             { return 1 }
+func (d updateMultiSelectDelegate) Spacing() int                            { return 0 }
 func (d updateMultiSelectDelegate) Update(_ tea.Msg, _ *list.Model) tea.Cmd { return nil }
 
 func (d updateMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, item list.Item) {
@@ -51,7 +51,7 @@ func (d updateMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, 
 	}
 
 	if u.name == updateAllSentinel {
-		fmt.Fprintln(w, style.Render(cursor+check+"Update all"))
+		fmt.Fprint(w, style.Render(cursor+check+"Update all"))
 		return
 	}
 	line := style.Render(cursor + check + u.name)
@@ -62,16 +62,17 @@ func (d updateMultiSelectDelegate) Render(w io.Writer, m list.Model, index int, 
 	if u.locked != "" {
 		rest += "  (locked: " + u.locked + ")"
 	}
-	fmt.Fprintln(w, line+style.Render(rest))
+	fmt.Fprint(w, line+style.Render(rest))
 }
 
 // updateModel is a bubbletea model for the interactive update skill list.
 type updateModel struct {
-	list     list.Model
-	sel      map[int]bool
-	selected []string // dep names chosen by the user
-	allDeps  []string // all semver-constrained dep names (for "Update all")
-	quitting bool
+	list      list.Model
+	maxHeight int // content-capped list height; the list never grows past it
+	sel       map[int]bool
+	selected  []string // dep names chosen by the user
+	allDeps   []string // all semver-constrained dep names (for "Update all")
+	quitting  bool
 }
 
 func newUpdateModel(skills []updateSkillItem, allDeps []string) updateModel {
@@ -94,7 +95,7 @@ func newUpdateModel(skills []updateSkillItem, allDeps []string) updateModel {
 	l.SetFilteringEnabled(false)
 	l.SetShowHelp(false)
 
-	return updateModel{list: l, sel: sel, allDeps: allDeps}
+	return updateModel{list: l, maxHeight: height, sel: sel, allDeps: allDeps}
 }
 
 func (m updateModel) Init() tea.Cmd { return nil }
@@ -102,13 +103,7 @@ func (m updateModel) Init() tea.Cmd { return nil }
 func (m updateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		available := msg.Height - listReservedRows
-		if available < 2 {
-			available = 2
-		}
-		if available < m.list.Height() {
-			m.list.SetHeight(available)
-		}
+		fitListToTerminal(&m.list, msg.Height, m.maxHeight)
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.Type {
